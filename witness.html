@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>証人尋問フェーズ | 春夏秋冬〜追憶〜</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* 16:9維持のゲーム画面フレーム */
+    .game-screen {
+      width: min(90vw, 160vh) !important;
+      height: calc(min(90vw, 160vh) * 9 / 16) !important;
+      max-width: 100vw;
+      max-height: 90vh;
+      background: url('background/great_houl.png') center/cover no-repeat #0f0f12;
+      position: relative !important;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* 上部：六角形風のキャラ名バッジ */
+    .top-name-badge-container {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      text-align: center;
+    }
+    .top-name-badge {
+      background: linear-gradient(135deg, rgba(30,35,45,0.95), rgba(15,18,25,0.95));
+      color: #ffffff;
+      padding: 8px 60px;
+      font-size: 1.25rem;
+      letter-spacing: 0.15em;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      clip-path: polygon(15% 0%, 85% 0%, 100% 50%, 85% 100%, 15% 100%, 0% 50%);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+    }
+
+    /* キャラクター選択エリア（横並び） */
+    .character-selection-area {
+      position: absolute;
+      top: 95px;
+      left: 4%;
+      right: 4%;
+      height: 54%; /* 少し高さをスリムにする */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;   /* 隙間を少し詰める */
+      z-index: 10;
+      overflow: hidden; /* ★はみ出しを防止する */
+    }
+
+    /* 個別のキャラカード */
+    .char-card {
+      position: relative;
+      height: 100%;
+      aspect-ratio: 2.8 / 4; /* 少しスリムにする */
+      cursor: pointer;
+      transition: all 0.3s ease;
+      filter: brightness(0.5);
+      border: 2px solid transparent;
+      box-sizing: border-box;
+      overflow: hidden; /* ★画像のはみ出しを防止 */
+    }
+
+    .char-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .char-card:hover {
+      filter: brightness(0.8);
+    }
+    /* 選択中のキャラクター（赤枠＋明るさMAX） */
+    .char-card.selected {
+      filter: brightness(1.0);
+      border: 3px solid #ff3b3b;
+      box-shadow: 0 0 25px rgba(255, 59, 59, 0.6);
+      transform: scale(1.02);
+      z-index: 12;
+    }
+
+    /* 下部：キャラ説明テキストボックス */
+    .bottom-textbox {
+      position: absolute;
+      bottom: 20px;
+      left: 25px;
+      right: 180px;
+      height: 110px;
+      background: rgba(10, 10, 15, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 20px 25px;
+      box-sizing: border-box;
+      z-index: 20;
+      backdrop-filter: blur(5px);
+    }
+    .bottom-textbox p {
+      margin: 0;
+      font-size: 1.15rem;
+      color: #e0e0e0;
+      letter-spacing: 0.05em;
+    }
+
+    /* 右下：「次へ進む」ボタン */
+    .next-step-btn {
+      position: absolute;
+      bottom: 20px;
+      right: 25px;
+      width: 140px;
+      height: 110px;
+      background: rgba(10, 10, 15, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      color: #ffffff;
+      font-size: 1.3rem;
+      font-family: inherit;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+      transition: all 0.2s ease;
+    }
+    .next-step-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: #ffe169;
+      color: #ffe169;
+      box-shadow: 0 0 15px rgba(255, 225, 105, 0.3);
+    }
+
+    /* --- モーダル共通スタイル（背景の暗幕＋中央ボックス） --- */
+    .modal-overlay {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      background: rgba(0, 0, 0, 0.75) !important;
+      backdrop-filter: blur(6px);
+      z-index: 99999 !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      transition: all 0.3s ease !important;
+    }
+    .modal-overlay.active {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+
+    .modal-box {
+      width: 65%;
+      max-width: 450px;
+      max-height: 85%; /* ★高さに制限をかける */
+      background: rgba(15, 15, 20, 0.95);
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      padding: 25px 30px; /* ★上下のパディングを少しスリムにする */
+      box-sizing: border-box;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+      overflow-y: auto; /* ★万が一大きくなったときにスクロールできるようにする */
+    }
+
+    /* モーダル内の六角形タイトルバッジ */
+    .modal-title-badge {
+      background: linear-gradient(135deg, rgba(40,45,60,0.95), rgba(20,22,30,0.95));
+      color: #ffffff;
+      padding: 10px 40px;
+      font-size: 1.3rem;
+      letter-spacing: 0.15em;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      clip-path: polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%);
+      display: inline-block;
+      margin-bottom: 30px;
+    }
+
+    .modal-message {
+      font-size: 1.6rem;
+      color: #ff4d4d;
+      margin-bottom: 35px;
+      letter-spacing: 0.08em;
+    }
+
+    /* モーダルのボタン配置 */
+    .modal-btn-group {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+    }
+    .modal-action-btn {
+      width: 130px;
+      padding: 12px 0;
+      background: transparent;
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      color: #fff;
+      font-size: 1.2rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .modal-action-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: #ffe169;
+      color: #ffe169;
+    }
+
+    /* テンキーパッド（パスワード入力用） */
+    /* テンキーパッド（パスワード入力用） */
+    .num-pad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 70px); /* ボタンの横幅を少しスリムに */
+      gap: 10px; /* 隙間を詰める */
+      justify-content: center;
+      margin-top: 15px;
+    }
+    .num-pad-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1.3rem;
+      padding: 10px 0; /* ★高さをスリムにする */
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .num-pad-btn:hover {
+      background: #ffe169;
+      color: #000;
+      border-color: #ffe169;
+    }
+
+    /* 左上のヘッダーコピペ用 */
+    .header-bar {
+      position: absolute;
+      top: 10px;
+      left: 0px;
+      right: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      z-index: 10;
+    }
+
+    /* 左上：固定バッジ */
+    .top-badge {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      color: #ffffff;
+      padding: 6px 20px;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+      border-left: 3px solid #5a78d0;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+
+    /* 右上メニューボタン */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+
+  </style>
+</head>
+<body>
+
+  <div class="game-screen">
+    
+    <!-- 上部：キャラ名バッジ -->
+    <div class="top-name-badge-container">
+      <div class="top-name-badge" id="activeCharName">証人尋問</div>
+    </div>
+
+    <!-- キャラクター選択一覧 -->
+    <div class="character-selection-area">
+      <div class="char-card selected" onclick="selectCharacter('サクラ', '現在の春の護衛官をしている少女。\n先代の春の代行者”ツバキ”の時から続けている。', 0)">
+        <img src="chara/sakura_icon.png" alt="サクラ" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23222%22/><text x=%2250%22 y=%2255%22 font-size=%2220%22 fill=%22%23fff%22 text-anchor=%22middle%22>ヒナギク</text></svg>'">
+      </div>
+      <div class="char-card" onclick="selectCharacter('スイレン', '夏の代行者ヒマワリの実兄であり、現在の夏の護衛官。\n事件当日には四季庁内の警備を担当していた。', 1)">
+        <img src="chara/suiren_icon.png" alt="スイレン" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23222%22/><text x=%2250%22 y=%2255%22 font-size=%2220%22 fill=%22%23fff%22 text-anchor=%22middle%22>ヒマワリ</text></svg>'">
+      </div>
+      <div class="char-card" onclick="selectCharacter('リンドウ', '現在の秋の護衛官。事件の日、警備責任者だった先代が辞職。\n先代に代わって新たに就任したばかりの少年。', 2)">
+        <img src="chara/rindo_icon.png" alt="リンドウ" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23222%22/><text x=%2250%22 y=%2255%22 font-size=%2220%22 fill=%22%23fff%22 text-anchor=%22middle%22>ダリア</text></svg>'">
+      </div>
+      <div class="char-card" onclick="selectCharacter('ミオ', '現在の冬の護衛官。四季統括者ユウタや補佐ヒジリとは幼馴染。\n過去に何か大きな事件に巻き込まれたことがあるようだ。', 3)">
+        <img src="chara/mio_icon.png" alt="ミオ" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23222%22/><text x=%2250%22 y=%2255%22 font-size=%2220%22 fill=%22%23fff%22 text-anchor=%22middle%22>ヒイラギ</text></svg>'">
+      </div>
+      <div class="char-card" onclick="selectCharacter('ヒジリ', '四季統括者ユウタ・冬の護衛官ミオの幼馴染。\n現在は四季統括補佐をしている。', 4)">
+        <img src="chara/hijiri_icon.png" alt="ヒジリ" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23222%22/><text x=%2250%22 y=%2255%22 font-size=%2220%22 fill=%22%23fff%22 text-anchor=%22middle%22>ユウタ</text></svg>'">
+      </div>
+    </div>
+
+    <!-- 下部：説明テキストボックス -->
+    <div class="bottom-textbox">
+      <p id="charDescription">5人の中から好きなキャラを1人選んでください。キャラを選んだあとは次に進むボタンを押してください。</p>
+    </div>
+
+    <!-- 右下：次へ進むボタン -->
+    <button class="next-step-btn" onclick="openConfirmModal()">次へ進む</button>
+
+
+    <!-- ================= モーダル群 ================= -->
+
+    <!-- 確認モーダル（本当によろしいですか？） -->
+    <div class="modal-overlay" id="confirmModal">
+      <div class="modal-box">
+        <div class="modal-title-badge" id="confirmModalTitle">サクラ</div>
+        <div class="modal-message">本当によろしいですか？</div>
+        <div class="modal-btn-group">
+          <button class="modal-action-btn" onclick="closeModal('confirmModal')">いいえ</button>
+          <button class="modal-action-btn" onclick="openPasswordModal()" style="background-color: #8b0000; border-color: #ff4d4d;">はい</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- パスワード入力モーダル -->
+    <div class="modal-overlay" id="passwordModal">
+      <div class="modal-box" style="max-width: 500px;">
+        <button onclick="closeModal('passwordModal')" style="position:absolute; top:15px; right:20px; background:#c93b3b; border:none; color:#fff; width:30px; height:30px; border-radius:50%; cursor:pointer;">✕</button>
+        <div class="modal-title-badge">パスワード認証</div>
+        <p style="color: #aaa; margin-bottom: 15px;">パスワードを入力してください</p>
+        <div style="font-size: 1.8rem; font-family: monospace; letter-spacing: 0.4em; background: #000; border: 2px solid #ffe169; padding: 10px; color: #ffe169; margin-bottom: 20px;" id="passDisplay">---</div>
+        <div class="num-pad-grid">
+          <button class="num-pad-btn" onclick="inputPassword('1')">1</button>
+          <button class="num-pad-btn" onclick="inputPassword('2')">2</button>
+          <button class="num-pad-btn" onclick="inputPassword('3')">3</button>
+          <button class="num-pad-btn" onclick="inputPassword('4')">4</button>
+          <button class="num-pad-btn" onclick="inputPassword('5')">5</button>
+          <button class="num-pad-btn" onclick="inputPassword('6')">6</button>
+          <button class="num-pad-btn" onclick="inputPassword('7')">7</button>
+          <button class="num-pad-btn" onclick="inputPassword('8')">8</button>
+          <button class="num-pad-btn" onclick="inputPassword('9')">9</button>
+          <button class="num-pad-btn" onclick="clearPassword()">C</button>
+          <button class="num-pad-btn" onclick="inputPassword('0')">0</button>
+          <button class="num-pad-btn" onclick="submitPassword()" style="background:#ffe169; color:#000;">✓</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 成功モーダル（Success） -->
+     <div class="modal-overlay" id="successModal">
+      <div class="modal-box">
+        <h2 style="color: #4cd137; font-size: 2.2rem; margin-top:0;">! Success !</h2>
+        <p style="font-size: 1.3rem; line-height: 1.8; margin: 25px 0;">認証に成功しました<br>次の画面へ進みます</p>
+        <!-- ★ここを実際に作成する次の画面のファイル名にする -->
+         <button class="modal-action-btn" onclick="goToNextPhase()" style="background: #4cd137; color:#000; border-color:#4cd137; font-weight:bold;">進む</button>
+        </div>
+      </div>
+
+    <!-- 失敗モーダル（Failed） -->
+    <div class="modal-overlay" id="failedModal">
+      <div class="modal-box">
+        <h2 style="color: #ff3b3b; font-size: 2.2rem; margin-top:0;">! Failed !</h2>
+        <p style="font-size: 1.3rem; line-height: 1.8; margin: 25px 0;">認証に失敗しました<br>もう一度入力してください</p>
+        <button class="modal-action-btn" onclick="closeModal('failedModal')" style="background: #ff3b3b; color:#fff; border-color:#ff3b3b;">もどる</button>
+      </div>
+    </div>
+
+    <div class="header-bar">
+      <div class="top-badge">11. 証人尋問</div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentSelectedName = "サクラ";
+    let enteredPassword = "";
+    const characterPasswords = {
+      "サクラ": "765",
+      "スイレン": "308",
+      "リンドウ": "849",
+      "ミオ": "612",
+      "ヒジリ": "937"
+    };
+
+    function selectCharacter(name, desc, index) {
+      currentSelectedName = name;
+      document.getElementById("activeCharName").innerText = name;
+      document.getElementById("confirmModalTitle").innerText = name;
+      document.getElementById("charDescription").innerText = desc;
+
+      // 選択状態の切り替え
+      const cards = document.querySelectorAll(".char-card");
+      cards.forEach((card, i) => {
+        if (i === index) {
+          card.classList.add("selected");
+        } else {
+          card.classList.remove("selected");
+        }
+      });
+    }
+
+    function openConfirmModal() {
+      document.getElementById("confirmModal").classList.add("active");
+    }
+
+    function openPasswordModal() {
+      closeModal('confirmModal');
+      enteredPassword = "";
+      document.getElementById("passDisplay").innerText = "---";
+      document.getElementById("passwordModal").classList.add("active");
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove("active");
+    }
+
+    function inputPassword(num) {
+      if (enteredPassword.length < 3) {
+        enteredPassword += num;
+        document.getElementById("passDisplay").innerText = enteredPassword.padEnd(3, '-');
+      }
+    }
+
+    function clearPassword() {
+      enteredPassword = "";
+      document.getElementById("passDisplay").innerText = "---";
+    }
+
+    function submitPassword() {
+      closeModal('passwordModal');
+      
+      // 現在選ばれているキャラクターの正しいパスワードを取得する
+      const correctPassword = characterPasswords[currentSelectedName];
+
+      if (enteredPassword === correctPassword) {
+        document.getElementById("successModal").classList.add("active");
+      } else {
+        document.getElementById("failedModal").classList.add("active");
+      }
+    }
+
+    function goToNextPhase() {
+  // どのキャラが選ばれたかを保存する
+  localStorage.setItem('selectedWitnessChar', currentSelectedName);
+  
+  // 次の画面へ移動
+  location.href = "witness_HO.html"; // 実際の次のHTMLファイル名
+  }
+  </script>
+
+  <script src="menu.js"></script>
+
+</body>
+</html>

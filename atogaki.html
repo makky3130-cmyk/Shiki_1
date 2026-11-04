@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>あとがき | 春夏秋冬〜追憶〜</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* 16:9のゲーム画面フレーム */
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background-color: #0f0f12;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* ふきだし風のメッセージウィンドウ */
+    .afterword-box {
+      width: 75%;
+      height: 75%;
+      background: rgba(255, 255, 255, 0.7); /* 少し透ける白ベース */
+      backdrop-filter: blur(5px);
+      color: #1a1a1a;      /* 文字は黒っぽく読みやすく */
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      padding: 40px 50px;
+      box-sizing: border-box;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ふきだしの「しっぽ」部分 */
+    .afterword-box::after {
+      content: '';
+      position: absolute;
+      bottom: -30px;
+      left: 60px;
+      border-width: 30px 25px 0 0;
+      border-style: solid;
+      border-color: rgba(255, 255, 255, 0.7) transparent;
+      display: block;
+      width: 0;
+    }
+
+    .afterword-title {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-top: 0;
+      margin-bottom: 20px;
+      letter-spacing: 0.08em;
+      border-bottom: 2px solid #1a1a1a;
+      padding-bottom: 10px;
+    }
+
+    /* スクロール可能な文章エリア */
+    .afterword-content {
+      flex: 1;
+      overflow-y: auto;
+      font-size: 1.15rem;
+      line-height: 1.8;
+      padding-right: 15px;
+      white-space: pre-wrap;
+    }
+
+    /* スクロールバーのデザイン */
+    .afterword-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    .afterword-content::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+    }
+
+    /* ボタン配置エリア（左右に分ける） */
+    .action-area {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between; /* 左右に配置 */
+      align-items: center;
+    }
+
+    .nav-btn {
+      background: #2b3b70;
+      color: #fff;
+      border: none;
+      padding: 10px 25px;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Sawarabi Mincho', serif;
+      transition: background 0.2s;
+    }
+    .nav-btn:hover {
+      background: #3a4e94;
+    }
+    
+    /* 右上メニューボタン */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+
+  </style>
+</head>
+<body>
+
+  <div class="game-screen" style="background-image: url('background/tsubaki_with_spring.png');">
+    
+    <div class="afterword-box">
+      <div class="afterword-title">あとがき</div>
+      <div class="afterword-content">
+        この度は、オリジナルマーダーミステリー 春夏秋冬～追憶～で遊んでくれてどうもありがとうございました。中々苦労したのもあり、楽しんでくれたなら嬉しいです。
+        さて、今回の物語ですが主人公は完全にツバキであり、その悲劇を追憶することでツバキという少女を理解してもらうためだけの物語です。登場人物は全てツバキとゆかりがあり、悲劇の日について話すことで、ツバキが何を想い、どう生きたのか、その人生の物語が徐々に形を成す。
+        死してなお、その存在が与える影響の大きさと、記憶の中で生き続ける少女の在り方、現代の日本では感じることのできない、そういった人々の温かみや儚さを、表現したかったものになります。
+        執筆中に何度か共感性羞恥でそっと画面を閉じたこともありましたが、5か月間の時を経て何とか形になり、大変うれしく思います。次回作も既に執筆中ではありますので、どうぞご期待ください。
+        エンドストーリー(ダリア)ルートのネタバレにはなりますが、ツバキからヒマワリ・ヒイラギへと当てた手紙は右下のボタンから読めます。ぜひ、読んでみてね。
+        それでは、またお会いしましょう。    
+    </div>
+
+      <!-- 下部ボタンエリア（左に「戻る」、右に「次へ」） -->
+      <div class="action-area">
+        <button class="nav-btn" onclick="location.href='end.html'">戻る</button>
+        <button class="nav-btn" onclick="location.href='tegami.html'">手紙を読む</button>
+      </div>
+    </div>
+
+    <script src="menu.js"></script>
+
+  </div>
+
+</body>
+</html>

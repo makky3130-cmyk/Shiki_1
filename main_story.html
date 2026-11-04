@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>本編 | 春夏秋冬〜追憶〜</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* 1. ゲーム画面（枠からはみ出た部分を自動カット） */
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background-color: #0f0f12;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      overflow: hidden; /* ★枠外はみ出し自動カット */
+      cursor: pointer;
+    }
+
+    /* 2. 立ち絵全体の配置エリア */
+    .character-container {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 5%;
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .character-slot {
+      width: 45%;
+      height: 100%;
+      display: flex;
+      align-items: flex-start; /* ★頭基準 */
+      transition: all 0.3s ease;
+    }
+
+    .character-slot.left-slot {
+      justify-content: flex-start;
+    }
+
+    .character-slot.right-slot {
+      justify-content: flex-end;
+    }
+
+    .character-img {
+      width: 130%;
+      height: auto;
+      max-height: none;
+      max-width: none;
+      object-fit: contain;
+      transition: filter 0.3s ease, transform 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease; 
+      filter: drop-shadow(0 5px 15px rgba(0,0,0,0.8));
+      opacity: 0;
+      margin-top: 50px; 
+    }
+
+    .character-img.show {
+      opacity: 1;
+    }
+    
+    .hinagiku-img {
+      width: 110% !important;
+      margin-top: 70px !important;
+    }
+
+    .yuta-img {
+      width: 100% !important;
+      margin-top: 50px !important;
+    }
+
+    /* 🎭 発言中（アクティブ）の立ち絵 */
+    .character-slot.active .character-img {
+      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4)) brightness(1);
+      transform: scale(1.05);
+      z-index: 10;
+    }
+
+    /* 🕶 非発言（非アクティブ）の立ち絵 */
+    .character-slot.inactive .character-img {
+      filter: brightness(0.35);
+      transform: scale(0.95);
+      z-index: 5;
+    }
+
+    /* 4. メッセージボックス */
+    .message-box {
+      width: 100%;
+      min-height: 150px;
+      background: rgba(10, 10, 15, 0.92);
+      border-top: 2px solid rgba(255, 255, 255, 0.2);
+      padding: 30px 35px 20px 35px; /* 上パディングを少し広げて枠と文字の衝突を防止 */
+      box-sizing: border-box;
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    /* 🏷 話者名用ネームウィンドヨタグ（メッセージボックス左上に配置） */
+    .speaker-name {
+      position: absolute;
+      top: -24px; /* メッセージボックスの上面を跨ぐ位置へ */
+      left: 30px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #ffffff; /* デフォルト色（ナレーション・その他） */
+      background: rgba(15, 15, 22, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-bottom: none; /* メッセージボックスと一体化感を出す */
+      border-radius: 6px 6px 0 0;
+      padding: 4px 18px;
+      letter-spacing: 0.1em;
+      box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.5);
+      transition: color 0.3s ease, border-color 0.3s ease;
+    }
+
+    /* 話者がいない（ナレーションやト書きで名前が空）のときは非表示 */
+    .speaker-name:empty {
+      display: none;
+    }
+
+    /* 🎨 キャラ別名前カラー設定 */
+    .speaker-name.color-hinagiku { color: #ff9ebb; border-color: rgba(255, 158, 187, 0.5); } /* ヒナギク：ピンク */
+    .speaker-name.color-himawari { color: #ffe169; border-color: rgba(255, 225, 105, 0.5); } /* ヒマワリ：黄色 */
+    .speaker-name.color-daria    { color: #ff5252; border-color: rgba(255, 82, 82, 0.5); }   /* ダリア：赤 */
+    .speaker-name.color-hiragi   { color: #64b5f6; border-color: rgba(100, 181, 246, 0.5); } /* ヒイラギ：青 */
+    .speaker-name.color-yuta     { color: #ba68c8; border-color: rgba(186, 104, 200, 0.5); } /* ユウタ：紫 */
+
+    /* セリフ・本文（誰が喋っても常に白統一） */
+    .message-text {
+      font-size: 1.25rem;
+      line-height: 1.7;
+      color: #ffffff;
+      margin: 0;
+      white-space: pre-wrap;
+    }
+
+    /* 次へ進むインジケーター（▼マーク） */
+    .next-arrow {
+      position: absolute;
+      bottom: 15px;
+      right: 25px;
+      font-size: 1.2rem;
+      color: #e5eb72;
+      animation: bounce 1s infinite alternate;
+    }
+
+    @keyframes bounce {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(5px); }
+    }
+
+    /* 左上のヘッダーコピペ用 */
+    .header-bar {
+      position: absolute;
+      top: 10px;
+      left: 0px;
+      right: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      z-index: 10;
+    }
+
+    /* 左上：固定バッジ */
+    .top-badge {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      color: #ffffff;
+      padding: 6px 20px;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+      border-left: 3px solid #5a78d0;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+    
+    /* 右上メニューボタンの位置調整 */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen" id="gameScreen" onclick="nextScenario()">
+    
+    <div class="header-bar">
+      <div class="top-badge">7. メインストーリー</div>
+    </div>
+
+    <!-- 左右のキャラクター表示エリア -->
+    <div class="character-container">
+      <div class="character-slot left-slot" id="leftSlot">
+        <img id="leftCharaImg" class="character-img" src="" alt="">
+      </div>
+      <div class="character-slot right-slot" id="rightSlot">
+        <img id="rightCharaImg" class="character-img" src="" alt="">
+      </div>
+    </div>
+
+    <!-- メッセージボックス -->
+    <div class="message-box">
+      <div class="speaker-name" id="speakerName"></div>
+      <p class="message-text" id="messageText"></p>
+      <div class="next-arrow">▼</div>
+    </div>
+  </div>
+
+  <script>
+    const scenarioData = [
+      {
+        bg: "background/great_houl_1.png",
+        speaker: "ナレーション",
+        text: "厳寒の冬、真っ只中に集められたホール。そこに佇む異彩を放つ少女に全ての人の目は釘付けになる。",
+        leftChara: "",
+        rightChara: "",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒイラギ",
+        text: "ま、まさか、新たな春の代行者が現れたのか？",
+        leftChara: "chara/hiragi_surprised.png",
+        rightChara: "",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "冬の代行者・ヒイラギは驚愕に顔を歪ませたまま、そう言い放った。",
+        leftChara: "chara/hiragi_surprised.png",
+        rightChara: "",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒマワリ",
+        text: "そ、それってまさか…",
+        leftChara: "chara/daria_surprised.png",
+        rightChara: "chara/himawari_surprised.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ダリア",
+        text: "ツバキが死んだのか！？",
+        leftChara: "chara/daria_surprised.png",
+        rightChara: "chara/himawari_surprised.png",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "夏の代行者・ヒマワリの言葉を遮って、秋の代行者・ダリアが声を荒げる。",
+        leftChara: "chara/daria_surprised.png",
+        rightChara: "chara/himawari_surprised.png",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "世界に季節を巡らせる代行者は、神々により選ばれ、その使命を全うする。",
+        leftChara: "",
+        rightChara: "",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "代行者が何らかの理由で命を落とした場合には、代行者の一族から新たな代行者が神々により選ばれる。",
+        leftChara: "",
+        rightChara: "",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "この世に同じ季節の代行者が複数人存在することはできないのである。",
+        leftChara: "",
+        rightChara: "",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "ここまで沈黙を貫いていた、今回の召集の張本人”ユウタ”がおもむろに口を開く。",
+        leftChara: "",
+        rightChara: "",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ユウタ",
+        text: "遠路はるばるよくぞ参られた。代行者とその従者様方。",
+        leftChara: "chara/yuta.png",
+        rightChara: "",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ユウタ",
+        text: "今回お集まりいただいたのはご察しの通り、新たな春の代行者様が顕現された。ひいては…",
+        leftChara: "chara/yuta.png",
+        rightChara: "",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒイラギ",
+        text: "待て！それは事実か？ツバキは本当に死んだのか？",
+        leftChara: "chara/yuta.png",
+        rightChara: "chara/hiragi_surprised.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ユウタ",
+        text: "・・・。ヒジリ、頼む。",
+        leftChara: "chara/yuta.png",
+        rightChara: "chara/hiragi_surprised.png",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "ユウタは隣に控えていた副官”ヒジリ”に声をかける。",
+        leftChara: "chara/yuta.png",
+        rightChara: "chara/hijiri.png",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "ヒジリはまるでこうなることがわかっているかのように、スクリーンに画像を表示する。",
+        leftChara: "chara/yuta.png",
+        rightChara: "chara/hijiri.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/story_7.png",
+        speaker: "ナレーション",
+        text: "そこに写っていたのは、10年が経ち、大人になったツバキのもう二度と動くことのない姿だった。",
+        leftChara: "",
+        rightChara: "",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ユウタ",
+        text: "つい先日のことになります。我々の捜査によってテロ組織のアジトの所在を突き止め、捜索作戦を決行いたしました。",
+        leftChara: "chara/yuta.png",
+        rightChara: "",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ユウタ",
+        text: "その際、地下室にてツバキ様を発見。その場で死亡が確認されました。",
+        leftChara: "chara/yuta.png",
+        rightChara: "",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒマワリ",
+        text: "ツバキちゃん…。",
+        leftChara: "chara/yuta.png",
+        rightChara: "chara/himawari_sad.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒイラギ",
+        text: "ツバキ…。",
+        leftChara: "chara/hiragi_regret.png",
+        rightChara: "chara/himawari_sad.png",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ダリア",
+        text: "そ、そんな。ツバキ…。",
+        leftChara: "chara/hiragi_regret.png",
+        rightChara: "chara/daria_surprised.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "代行者たちはそれぞれの反応をしめす。",
+        leftChara: "",
+        rightChara: "",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "しかし、その空気を両断するかのように、ユウタは冷たく言葉を放つ。",
+        leftChara: "chara/yuta.png",
+        rightChara: "",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ユウタ",
+        text: "10年間ヤマトの国に訪れなかった春。ヒナギク様の顕現により、久方ぶりの生命の息吹を感じることが出来るでしょう。",
+        leftChara: "chara/yuta.png",
+        rightChara: "",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "ユウタは淡々とまるで業務連絡でもするかのように言葉を綴る。その態度に代行者たちは眉を顰める。",
+        leftChara: "chara/yuta.png",
+        rightChara: "",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "しかし、ユウタは微かに語尾を震わせ、苦難の表情を見せる。",
+        leftChara: "chara/yuta.png",
+        rightChara: "",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ユウタ",
+        text: "私はこの10年間、あの夜を忘れたことはありませんでした。",
+        leftChara: "chara/yuta_angry.png",
+        rightChara: "",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ユウタ",
+        text: "今回の調査である事実が判明しました。あの夜、ツバキ様の誘拐の裏に”内通者の存在があった”、と。",
+        leftChara: "chara/yuta_angry.png",
+        rightChara: "",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒジリ",
+        text: "そして、その疑いがあるのはあの日、あの場所にいた皆さんの中にいると我々は考えています。",
+        leftChara: "chara/yuta.png",
+        rightChara: "chara/hijiri.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒイラギ",
+        text: "つまり、四季庁が唐突に我々を収集したのは・・・。",
+        leftChara: "chara/hiragi_normal.png",
+        rightChara: "chara/hijiri.png",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒマワリ",
+        text: "ツバキちゃん誘拐の犯人と通じていた裏切者を暴くため？",
+        leftChara: "chara/hiragi_normal.png",
+        rightChara: "chara/himawari_surprised.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ダリア",
+        text: "しかし、アジトを捜索したのだろう？尋問すれば裏切者もおのずと出てくるのでは？",
+        leftChara: "chara/daria_normal.png",
+        rightChara: "chara/himawari_surprised.png",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ユウタ",
+        text: "今回の作戦で逮捕した者は全員自決しました。そのため情報は少ないのです。",
+        leftChara: "chara/daria_normal.png",
+        rightChara: "chara/yuta.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "サクラ",
+        text: "お話中のところ失礼いたします。春の代行者護衛官サクラと申します。",
+        leftChara: "chara/sakura_normal.png",
+        rightChara: "chara/yuta.png",
+        activePosition: "left",
+        voice: "audio/main_sakura_1.mp3"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "サクラ",
+        text: "そちらの情報についてはヒナギク様からお話があります。ヒナギク様、お願いします。",
+        leftChara: "chara/sakura_normal.png",
+        rightChara: "chara/yuta.png",
+        activePosition: "left",
+        voice: "audio/main_sakura_2.mp3"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "皆の話を遮り、春の護衛官サクラがヒナギクに話を振る。",
+        leftChara: "chara/sakura_normal.png",
+        rightChara: "chara/yuta.png",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒナギク",
+        text: "み、皆さま、お初にお目にかかります。この度、新たに春の代行者として覚醒しました、”ヒナギク”と申します。",
+        leftChara: "chara/sakura_normal.png",
+        rightChara: "chara/hinagiku_normal.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒナギク",
+        text: "実は、私が覚醒したとき、断片的にですがツバキ様の記憶を継承しました。",
+        leftChara: "chara/sakura_normal.png",
+        rightChara: "chara/hinagiku_normal.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "新たな春の代行者ヒナギクは小さな声で驚きの事実を口にした。",
+        leftChara: "chara/sakura_normal.png",
+        rightChara: "chara/hinagiku_normal.png",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒイラギ",
+        text: "それは本当か！？裏切者は誰だったんだ！！",
+        leftChara: "chara/hiragi_surprised.png",
+        rightChara: "chara/hinagiku_normal.png",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒナギク",
+        text: "ひっ！？",
+        leftChara: "chara/hiragi_surprised.png",
+        rightChara: "chara/hinagiku_scary.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "ヒイラギの勢いに押され、まだ幼いヒナギクは身をすくませる。",
+        leftChara: "chara/hiragi_surprised.png",
+        rightChara: "chara/hinagiku_scary.png",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "それを見た春の護衛官サクラは憤りを見せ、鋭い目つきで間に入る。",
+        leftChara: "chara/hiragi_surprised.png",
+        rightChara: "chara/sakura_angry.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "サクラ",
+        text: "ヒイラギ様。これ以上我々はあなたの横暴を許すつもりはありません。",
+        leftChara: "chara/hiragi_surprised.png",
+        rightChara: "chara/sakura_angry.png",
+        activePosition: "right",
+        voice: "audio/main_sakura_3.mp3"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "サクラ",
+        text: "もし次に、ヒナギク様に対して敵対的な言動を確認次第、我々はあなた方冬との全面対立も辞さないつもりです。",
+        leftChara: "chara/hiragi_surprised.png",
+        rightChara: "chara/sakura_angry.png",
+        activePosition: "right",
+        voice: "audio/main_sakura_4.mp3"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒイラギ",
+        text: "…。すまない。",
+        leftChara: "chara/hiragi_regret.png",
+        rightChara: "chara/sakura_angry.png",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "サクラの言葉にヒイラギは全く反抗の意思を見せずに謝罪の言葉を口にする。",
+        leftChara: "chara/hiragi_regret.png",
+        rightChara: "chara/sakura_angry.png",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "そこにヒマワリが冷ややかな口調で割り込む。",
+        leftChara: "chara/hiragi_regret.png",
+        rightChara: "chara/himawari_angry.png",
+        activePosition: ""
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒマワリ",
+        text: "私もあの日のことを許したつもりはないから。",
+        leftChara: "chara/hiragi_regret.png",
+        rightChara: "chara/himawari_angry.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ヒイラギ",
+        text: "・・・。",
+        leftChara: "chara/hiragi_regret.png",
+        rightChara: "chara/himawari_angry.png",
+        activePosition: "left"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ユウタ",
+        text: "その辺にしていただきたい。建設的な話をしましょう。大切なのは裏切り者は一体誰なのかということです。",
+        leftChara: "chara/hiragi_regret.png",
+        rightChara: "chara/yuta.png",
+        activePosition: "right"
+      },
+      {
+        bg: "background/great_houl.png",
+        speaker: "ナレーション",
+        text: "こうして、10年前のあの日の悲劇、その裏切者を暴く審問の時間が始まった。",
+        leftChara: "chara/hiragi_regret.png", /* 画像パスのタイポ(/png)も一緒に直しました */
+        rightChara: "chara/yuta.png",
+        activePosition: ""
+      }
+    ];
+
+    let currentStep = 0;
+
+    function renderStep() {
+      const data = scenarioData[currentStep];
+
+      // 背景画像変更
+      if (data.bg) {
+        document.getElementById('gameScreen').style.backgroundImage = `url('${data.bg}')`;
+      }
+
+      // 話者名とクラス付与（カラーの自動適用）
+      const speakerElem = document.getElementById('speakerName');
+      const speakerName = data.speaker || '';
+      speakerElem.innerText = speakerName;
+
+      // 既存の色クラスを一旦リセット
+      speakerElem.className = 'speaker-name';
+
+      // キャラ名判定で色クラスを付与
+      if (speakerName.includes('ヒナギク')) {
+        speakerElem.classList.add('color-hinagiku');
+      } else if (speakerName.includes('ヒマワリ')) {
+        speakerElem.classList.add('color-himawari');
+      } else if (speakerName.includes('ダリア')) {
+        speakerElem.classList.add('color-daria');
+      } else if (speakerName.includes('ヒイラギ')) {
+        speakerElem.classList.add('color-hiragi');
+      } else if (speakerName.includes('ユウタ')) {
+        speakerElem.classList.add('color-yuta');
+      }
+
+      // セリフ本文（テキスト）
+      document.getElementById('messageText').innerText = data.text || '';
+
+      // --- 立ち絵の更新とアクティブ制御 ---
+      updateCharaSlot('leftSlot', 'leftCharaImg', data.leftChara, data.activePosition === 'left', data.activePosition !== '');
+      updateCharaSlot('rightSlot', 'rightCharaImg', data.rightChara, data.activePosition === 'right', data.activePosition !== '');
+
+      // --- ▼ ここからボイス再生処理を追加！ ---
+      if (data.voice) {
+        let voiceAudio = document.getElementById('lineVoice');
+        if (!voiceAudio) {
+          voiceAudio = document.createElement('audio');
+          voiceAudio.id = 'lineVoice';
+          document.body.appendChild(voiceAudio);
+        }
+        voiceAudio.src = data.voice;
+        voiceAudio.currentTime = 0;
+
+        // BGMを少し下げてボイスを際立たせる演出
+        const bgm = document.getElementById('commonBgm');
+        if (bgm) bgm.volume = 0.2;
+
+        voiceAudio.play().catch(err => {
+          console.log("ボイスの自動再生待ち", err);
+        });
+
+        // ボイスが終わったらBGMの音量を元に戻す
+        voiceAudio.onended = () => {
+          if (bgm) bgm.volume = 0.5;
+        };
+      }
+    }
+
+    function updateCharaSlot(slotId, imgId, imageSrc, isActive, hasActiveSpeaker) {
+      const slot = document.getElementById(slotId);
+      const img = document.getElementById(imgId);
+
+      if (imageSrc) {
+        img.src = imageSrc;
+
+        // 画像ファイル名からキャラごとのCSSクラスを自動判定する仕組み
+        let autoClass = '';
+        if (imageSrc.includes('hinagiku')) {
+          autoClass = 'hinagiku-img';
+        } else if (imageSrc.includes('hiragi')) {
+          autoClass = 'hiragi-img';
+        } else if (imageSrc.includes('yuta')) {
+          autoClass = 'yuta-img';
+        }
+
+        img.className = 'character-img ' + autoClass;
+        img.classList.add('show');
+
+        slot.classList.remove('active', 'inactive');
+        if (isActive) {
+          slot.classList.add('active');
+        } else if (hasActiveSpeaker) {
+          slot.classList.add('inactive');
+        } else {
+          slot.classList.add('inactive');
+        }
+      } else {
+        img.classList.remove('show');
+        img.className = 'character-img';
+        slot.classList.remove('active', 'inactive');
+      }
+    }
+
+    function nextScenario() {
+      if (currentStep < scenarioData.length - 1) {
+        currentStep++;
+        renderStep();
+      } else {
+        ;
+        location.href = "character_HO.html";
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderStep();
+    });
+  </script>
+  <script src="menu.js"></script>
+</body>
+</html>

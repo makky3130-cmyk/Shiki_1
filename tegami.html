@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>手紙 | 春夏秋冬〜追憶〜</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #ffffff;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* 16:9 ゲーム画面フレーム */
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background-image: url('background/tsubaki_with_spring.png');
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 25px 40px;
+    }
+
+    /* 上部タイトル＆ページカウンター */
+    .top-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+      padding-bottom: 8px;
+      flex-shrink: 0;
+    }
+
+    .top-title {
+      font-size: 1.4rem;
+      letter-spacing: 0.1em;
+      color: #ffffff;
+      margin: 0;
+      text-shadow: 
+         2px  2px 0px #000000,
+        -2px  2px 0px #000000,
+         2px -2px 0px #000000,
+        -2px -2px 0px #000000,
+         0px  2px 0px #000000,
+         0px -2px 0px #000000,
+         2px  0px 0px #000000,
+        -2px  0px 0px #000000;
+    }
+
+    .page-indicator {
+      font-size: 1.1rem;
+      color: #e0e0e0;
+      background: rgba(10, 10, 20, 0.8);
+      padding: 4px 15px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+    }
+
+    /* 中央：スクロール可能な手紙表示エリア */
+    .letter-scroll-area {
+      width: 100%;
+      max-width: 650px;
+      height: 60vh;       /* ★高さを固定して確実にスクロールが出るようにする */
+      overflow-y: auto;   /* ★縦スクロール有効化 */
+      margin: 10px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+      padding-right: 8px;
+    }
+
+    .letter-scroll-area::-webkit-scrollbar {
+      width: 8px;
+    }
+    .letter-scroll-area::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 4px;
+    }
+
+    /* 手紙の画像（幅いっぱいに大きく表示し、高さは自動で伸びる） */
+    .letter-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 6px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* 下部ボタンコントロール */
+    .bottom-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .action-btn {
+      background: rgba(10, 10, 20, 0.85);
+      border: 2px solid #ffffff;
+      color: #ffffff;
+      font-size: 1.1rem;
+      font-family: 'Sawarabi Mincho', serif;
+      padding: 8px 30px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: #ffe169;
+      color: #ffe169;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      border-color: #555;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 15px;
+    }
+
+    /* 右上メニューボタン */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen">
+    
+    <!-- 上部ヘッダー -->
+    <div class="top-header">
+      <h1 class="top-title" id="letterTitle">ツバキからの手紙</h1>
+      <div class="page-indicator" id="pageIndicator">1 / 2</div>
+    </div>
+
+    <!-- 中央：スクロール可能な手紙エリア -->
+    <div class="letter-scroll-area" id="scrollArea">
+      <img id="letterImg" class="letter-img" src="" alt="手紙">
+    </div>
+
+    <!-- 下部ボタンコントロール -->
+    <div class="bottom-bar">
+      <button class="action-btn" onclick="location.href='atogaki.html'">あとがきへ戻る</button>
+      <div class="nav-buttons">
+        <button class="action-btn" id="prevBtn" onclick="changePage(-1)">前へ</button>
+        <button class="action-btn" id="nextBtn" onclick="changePage(1)">次へ</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const letters = [
+      { title: "ツバキからの手紙（ヒマワリへ）", src: "images/letter_himawari.png" },
+      { title: "ツバキからの手紙（ヒイラギへ）", src: "images/letter_hiragi.png" }
+    ];
+
+    let currentIndex = 0;
+
+    function updateLetterView() {
+      const current = letters[currentIndex];
+      
+      document.getElementById('letterImg').src = current.src;
+      document.getElementById('letterTitle').innerText = current.title;
+      document.getElementById('pageIndicator').innerText = `${currentIndex + 1} / ${letters.length}`;
+
+      document.getElementById('prevBtn').disabled = (currentIndex === 0);
+      document.getElementById('nextBtn').disabled = (currentIndex === letters.length - 1);
+
+      // ページを切り替えたときに、スクロール位置を一番上にリセット
+      document.getElementById('scrollArea').scrollTop = 0;
+    }
+
+    function changePage(direction) {
+      currentIndex += direction;
+      if (currentIndex < 0) currentIndex = 0;
+      if (currentIndex >= letters.length) currentIndex = letters.length - 1;
+      updateLetterView();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateLetterView();
+    });
+  </script>
+
+  <script src="menu.js"></script>
+
+</body>
+</html>

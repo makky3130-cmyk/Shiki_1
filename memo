@@ -1,0 +1,180 @@
+
+<script src="menu.js"></script>
+</body>
+
+
+
+/* オープニング画面の16:9ゲームモニター枠 */
+.game-screen {
+  width: 90vw;             /* 画面幅の90% */
+  max-width: 1280px;       /* PCで大きくなりすぎない限界値 */
+  aspect-ratio: 16 / 9;    /* どんな画面でも「16:9」の比率を絶対保持 */
+  
+  /* 背景画像の設定 */
+  background-image: url('images/opening_bg.jpg'); /* 16:9の背景画像 */
+  background-size: cover;                        /* 枠いっぱいに綺麗に表示 */
+  background-position: center;                   /* 中央合わせ */
+  
+  position: relative;
+  overflow: hidden;        /* 枠からはみ出た部分をカット */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+}
+
+
+
+
+
+
+1. キャラクターや公開情報を変更したい場合
+ファイルの下方にある <script> 内のデータを書き換えます。
+
+👤 キャラクターの追加・変更（const characters = ...）
+名前、テーマカラー、画像パス、初期未読数を変更できます。
+
+JavaScript
+const characters = [
+  // id: 識別名, name: 表示名, color: 名前の色, icon: 画像の場所, unread: 未読数
+  { id: "hinagiku", name: "ヒナギク", color: "#ff9ebb", icon: "chara/hinagiku_icon.png", unread: 0 },
+  { id: "himawari", name: "ヒマワリ", color: "#ffe169", icon: "chara/himawari_icon.png", unread: 1 },
+  // キャラを増やしたい場合はここにカンマ（,）区切りで追加します
+];
+📜 各キャラの公開情報（const publicInfoStore = ...）
+アイコンを押したときに右下に表示される情報を編集します。
+
+JavaScript
+const publicInfoStore = {
+  // キャラIDごとに情報をリストで記述します
+  hinagiku: [
+    { title: "確定情報 1", content: "ツバキは21時以降部屋に戻ってきていない。" },
+    { title: "確定情報 2", content: "凶器のナイフには手袋の跡が残っていた。" },
+    { title: "確定情報 3", content: null }, // contentを null にすると「まだ公開されていません。」になります
+  ],
+  himawari: [
+    { title: "確定情報 1", content: "20:00頃、廊下で足音を聞いた。" },
+  ]
+};
+2. モーダル（マップ・過去ログ・手帳）の中身変更
+HTMLの中ほどにある <!-- モーダル：... --> のブロック内の文章や画像を書き換えます。
+
+HTML
+<!-- モーダル：過去ログ -->
+<div class="modal-overlay" id="logModal">
+  <div class="modal-container">
+    <button class="modal-close-btn" onclick="closeModal('logModal')">✕</button>
+    <h3 class="modal-title">過去ログ確認</h3>
+    <div class="modal-body">
+      <!-- 以下の文章を好きなログテキストに書き換えてください -->
+      <p>【プロローグ】10年ぶりに集められた四季の代行者たち...</p>
+      <p>【オープニング】○○の死体が発見される。</p>
+    </div>
+  </div>
+</div>
+3. タイマーの初期時間変更
+標準の制限時間（現在は20分 = 1200秒）を変えたい場合は、<script> 内の以下の数字を変更します。
+
+JavaScript
+let remainingSeconds = 1200; // 15分にしたい場合は 900 に変更
+外部ファイル（JSONなど）からデータを読み込む仕組みに拡張することも可能ですので、運用しやすい方法に合わせて調整していきましょう！
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 右上メニューボタン */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+
+    <script src="menu.js"></script>
+
+
+
+
+
+
+
+    
+
+
+
+
+    
+    /* 左上のヘッダーコピペ用 */
+    .header-bar {
+      position: absolute;
+      top: 10px;
+      left: 0px;
+      right: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      z-index: 10;
+    }
+
+    /* 左上：固定バッジ */
+    .top-badge {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      color: #ffffff;
+      padding: 6px 20px;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+      border-left: 3px solid #5a78d0;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+    
+    <div class="header-bar">
+      <div class="top-badge">2. オープニング</div>
+    </div>

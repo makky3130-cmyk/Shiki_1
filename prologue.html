@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>プロローグ | 春夏秋冬〜追憶〜</title>
+  <style>
+    /* 全体レイアウト：画面中央に16:9枠を配置 */
+    body {
+      background-color: #050507;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    button {
+      background-color: transparent;
+      color: #e0e0e0;
+      border: 1px solid #ffffff;
+      padding: 12px 30px;
+      font-size: 1rem;
+      font-family: inherit;
+      margin: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    button:hover {
+      background-color: #ffffff;
+      color: #111111;
+      box-shadow: 0 0 15px rgba(250, 252, 232, 0.6);
+    }
+
+    /* 16:9表示のゲーム画面枠 */
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background-color: #0f0f12;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* 画面下部のメッセージウィンドウ */
+    .message-box {
+      width: 100%;
+      height: 28%;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.75));
+      border-top: 1px solid rgba(201, 59, 59, 0.6);
+      padding: 15px 25px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    /* テキスト表示エリア */
+    .message-text {
+      font-size: 1.3rem;
+      line-height: 1.7;
+      color: #ffffff;
+      letter-spacing: 0.05em;
+      white-space: pre-wrap;
+      max-height: 100%;
+      padding-right: 5px;
+    }
+
+    /* 送りボタンエリア */
+    .controls {
+      display: flex;
+      justify-content: flex-end;
+      gap: 15px;
+    }
+
+    /* 共通ボタン装飾 */
+    .action-btn {
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 24px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      border-color: rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .action-btn:hover:not(:disabled) {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    .header-bar {
+      position: absolute;
+      top: 10px;
+      left: 0px;
+      right: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      z-index: 10;
+    }
+
+    /* 左上：固定バッジ */
+    .top-badge {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      color: #ffffff;
+      padding: 6px 20px;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+      border-left: 3px solid #5a78d0;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+
+    /* 右上メニューボタンの位置定義 */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .menu-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .side-menu {
+      position: fixed;
+      top: 0;
+      right: -300px;
+      width: 250px;
+      height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002;
+      transition: right 0.3s ease;
+      padding: 40px 20px;
+      box-sizing: border-box;
+      text-align: left;
+    }
+
+    .side-menu.active {
+      right: 0;
+    }
+
+    .side-menu h2 {
+      color: #ffffff;
+      font-size: 1.5rem;
+      border-bottom: 1px solid #c93b3b;
+      padding-bottom: 10px;
+      margin-top: 0;
+    }
+
+    .side-menu ul {
+      list-style: none;
+      padding: 0;
+      margin: 30px 0;
+    }
+
+    .side-menu li {
+      margin-bottom: 20px;
+    }
+
+    .side-menu a {
+      color: #e0e0e0;
+      text-decoration: none;
+      font-size: 1.1rem;
+      display: block;
+    }
+
+    .side-menu a:hover {
+      color: #e5eb72;
+    }
+
+    .side-menu .close-btn {
+      width: 100%;
+      margin-top: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      padding: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 16:9のゲーム画面 -->
+  <div class="game-screen" id="gameScreen">
+    
+    <div class="header-bar">
+      <div class="top-badge">1. プロローグ</div>
+    </div>
+    
+    <!-- メッセージウィンドウ -->
+    <div class="message-box">
+      <div class="message-text" id="storyText"></div>
+    </div>
+
+  </div>
+
+  <!-- テキスト送りデータ設定 -->
+  <script>
+    // 次の画面へのファイル名指定
+    const nextPageUrl = "opening.html";
+
+    const storyLines = [
+      { text: "“春”、それは誕生の時。生命の芽吹く暖かな世界の名前。", bg: "spring.png" },
+      { text: "“夏”、それは激動の時。生命を育てる熱き世界の名前。", bg: "summer.png" },
+      { text: "“秋”、それは変化の時。生命に実りを与える優しい世界の名前。", bg: "autumn.png" },
+      { text: "“冬”、それは試練の時。生命に静寂を与える悲しき世界の名前。", bg: "winter.png" },
+      { text: "初めに“冬”があった、世界には“冬”しか季節がなく、“冬”は孤独に耐えかね春を創った。", bg: "winter_Myth.png" },
+      { text: "“春”は“冬”を、“冬”は“春”を恋い慕い、仲睦まじく繰り返した。", bg: "winter_spring.png" },
+      { text: "冬は空に夏と秋を創った。", bg: "summer_autumn.png" },
+      { text: "“春”は“冬”を追いかけ、“夏”と“秋”が続く、季節は“春夏秋冬”と巡るようになったが、“春”と“冬”の蜜月はもう存在しなかった。", bg: "4seasons.png" },
+      { text: "そこで、“夏”と“秋”は提案をした。大地に住まう者たちに自分たちの役割を任せてはどうかと。", bg: "4seasons.png" },
+      { text: "“四季”達は人間にその力の一部をお与えになり、冬は永遠に春を愛す時間を得た。", bg: "4seasons.png" },
+      { text: "神話はそう伝えている。", bg: "4seasons.png" },
+      { text: "春には桜の絨毯を", bg: "sakura.jpg" },
+      { text: "夏には緑の海を", bg: "midori.jpg" },
+      { text: "秋には銀杏の帳を", bg: "ityo.jpg" },
+      { text: "冬には白銀の揺りかごを", bg: "yuki.jpg" },
+      { text: "一年をかけて大地を巡り歩き季節の寵愛を森羅万象に贈る、神々よりその権能を授かりその使命を担うもの、その名を「四季の代行者」。", bg: "japan.png" },
+      { text: "これはその四季の代行者の物語であり、神話の続きであり、人殺しの話であり、救済の話であり、友情の話であり、よくある恋の話であり、", bg: "japan.png" },
+      { text: "そして、人々が織りなす人生の話でもある。", bg: "japan.png" },
+      { text: "これは、10年前に奪われた、季節を巡る物語だ。", bg: "japan.png" }
+    ];
+  </script>
+
+  <script src="story.js"></script>
+  <script src="menu.js"></script>
+</body>
+</html>

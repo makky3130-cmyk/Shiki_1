@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>推理タイム | 春夏秋冬〜追憶〜</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ゲーム画面全体のフレーム（16:9維持） */
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background: url('background/great_houl.png') center/cover no-repeat #0f0f12;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* 他人のターンのときの暗転オーバーレイ */
+    .dark-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.55);
+      pointer-events: none; /* 暗転中もボタンをクリックできるようにする */
+      transition: opacity 0.3s ease;
+      z-index: 5;
+    }
+
+    /* 上部バッジ（自分のターン：青、他人のターン：赤） */
+    .top-status-badge {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 45px;
+      font-size: 1.15rem;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      clip-path: polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+      z-index: 10;
+      text-align: center;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+    }
+    .badge-blue {
+      background: linear-gradient(135deg, #182245, #2b3b70, #182245);
+      color: #79c0ff;
+      border: 1px solid #5a78d0;
+    }
+    .badge-red {
+      background: linear-gradient(135deg, #601818, #9b2c2c, #601818);
+      color: #ff9e9e;
+      border: 1px solid #d05a5a;
+    }
+
+    /* 中央のツールボタン配置グリッド */
+    .tools-grid {
+      position: absolute;
+      top: 22%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: repeat(3, 240px);
+      grid-template-rows: repeat(2, 95px);
+      gap: 20px 30px;
+      z-index: 10;
+    }
+
+    .tool-card {
+      background: rgba(10, 10, 15, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      border-radius: 4px;
+      color: #79c0ff;
+      font-size: 1.5rem;
+      font-family: 'Sawarabi Mincho', serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.7);
+    }
+    .tool-card:hover {
+      background: rgba(30, 30, 45, 0.95);
+      border-color: #ffe169;
+      color: #ffe169;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(255, 225, 105, 0.3);
+    }
+
+    /* 下部の前へ・次へボタン */
+    .bottom-nav-bar {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 50px;
+      z-index: 10;
+    }
+
+    .nav-btn {
+      width: 200px;
+      padding: 12px 0;
+      background: rgba(10, 10, 15, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      border-radius: 4px;
+      color: #ffe169;
+      font-size: 1.3rem;
+      font-family: 'Sawarabi Mincho', serif;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.7);
+    }
+    .nav-btn:hover {
+      background: rgba(255, 225, 105, 0.2);
+      border-color: #ffe169;
+      transform: translateY(-2px);
+    }
+
+    /* 右上メニューボタン */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+
+    
+    /* 左上のヘッダーコピペ用 */
+    .header-bar {
+      position: absolute;
+      top: 10px;
+      left: 0px;
+      right: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      z-index: 10;
+    }
+
+    /* 左上：固定バッジ */
+    .top-badge {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      color: #ffffff;
+      padding: 6px 20px;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+      border-left: 3px solid #5a78d0;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+
+    /* モーダルの背景（普段は隠す） */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(5px);
+      z-index: 99999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+
+    /* .active がついたときだけ画面中央に現れる */
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    /* モーダルの箱本体 */
+    .modal-container {
+      width: 75vw;
+      height: 75vh;
+      max-width: 900px;
+      max-height: 650px;
+      background: #0f0f15;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+      position: relative;
+      padding: 30px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+      color: #e0e0e0;
+    }
+
+    /* 閉じる×ボタン */
+    .modal-close-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: #c93b3b;
+      border: none;
+      color: #fff;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    .modal-close-btn:hover {
+      background: #ff5252;
+    }
+
+    .modal-title {
+      font-size: 1.4rem;
+      color: #ffe169;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 12px;
+      margin-top: 0;
+      margin-right: 40px;
+    }
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="game-screen" id="gameScreen">
+
+    <div class="header-bar">
+      <div class="top-badge">14. 推理披露＆質疑応答</div>
+    </div>
+    
+    <!-- 他人のターンのときにかかる暗転オーバーレイ -->
+    <div class="dark-overlay" id="darkOverlay" style="opacity: 0;"></div>
+
+    <!-- 上部ステータスバッジ -->
+    <div class="top-status-badge badge-blue" id="topBadge">あなたの発言ターンです</div>
+
+    <!-- 中央の6つのメニューカード -->
+    <div class="tools-grid">
+      <div class="tool-card" onclick="openModal('mapModal')">地図</div>
+      <div class="tool-card" onclick="openModal('storyModal')">ストーリー</div>
+      <div class="tool-card" onclick="openModal('charaSheetModal')">キャラクターシート</div>
+      <div class="tool-card" onclick="openModal('handbookModal')">HO</div>
+      <div class="tool-card" onclick="openPublicInfoModal()">公開情報</div>
+    </div>
+
+    <!-- 下部のページ送りボタン -->
+    <div class="bottom-nav-bar">
+      <button class="nav-btn" onclick="prevTurn()">前へ戻る</button>
+      <button class="nav-btn" onclick="nextTurn()">次へ進む</button>
+    </div>
+
+    <!-- 地図モーダル（2ページ対応版） -->
+     <div class="modal-overlay" id="mapModal">
+        <div class="modal-container">
+            <!-- 右上の閉じるボタン -->
+             <button class="modal-close-btn" onclick="closeModal('mapModal')">✕</button>
+
+             <!-- モーダルのタイトル -->
+              <h3 class="modal-title">四季庁内部のマップ (<span id="mapPageNum">1</span>/2ページ)</h3>
+
+              <!-- モーダルの本文（画像を表示するエリア） -->
+               <div class="modal-body" style="display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
+      
+                <!-- 1ページ目の画像 -->
+                 <div class="map-page" id="mapPage1" style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">
+                    <img src="background/honkan.png" alt="四季庁マップ 1ページ目" style="max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid rgba(255,255,255,0.2);">
+                </div>
+
+                <!-- 2ページ目の画像（最初は非表示） -->
+                 <div class="map-page" id="mapPage2" style="display: none; justify-content: center; align-items: center; width: 100%; height: 100%;">
+                    <img src="background/bekkan.png" alt="四季庁マップ 2ページ目" style="max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid rgba(255,255,255,0.2);">
+                </div>
+            </div>
+
+            <!-- モーダル下部のページめくりボタン -->
+             <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px;">
+                <button class="nav-btn" style="width: 120px; font-size: 1rem; padding: 8px 0;" onclick="changeMapPage(-1)">◀ 前へ</button>
+                <button class="nav-btn" style="width: 120px; font-size: 1rem; padding: 8px 0;" onclick="changeMapPage(1)">次へ ▶</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ストーリーモーダル（3ページ対応版） -->
+     <div class="modal-overlay" id="storyModal">
+        <div class="modal-container">
+            <!-- 右上の閉じるボタン（※storyModalを指定） -->
+             <button class="modal-close-btn" onclick="closeModal('storyModal')">✕</button>
+
+             <!-- モーダルのタイトル（ページ数も連動して変わるようにidを振る） -->
+              <h3 class="modal-title">ストーリー (<span id="storyPageNum">1</span>/3ページ)</h3>
+
+              <!-- モーダルの本文（3ページ分の文章エリア） -->
+               <div class="modal-body" style="overflow-y: auto; color: #ccc; line-height: 1.8; font-size: 1.05rem; padding: 10px;">
+      
+                <!-- 1ページ目 -->
+                 <div class="story-page" id="storyPage1">
+                    <p>【プロローグ】<br>
+                        “春”、それは誕生の時。生命の芽吹く暖かな世界の名前。<br>
+                        <p>“夏”、それは激動の時。生命を育てる熱き世界の名前。<br>
+                        <p>“秋”、それは変化の時。生命に実りを与える優しい世界の名前。<br>
+            <p>“冬”、それは試練の時。生命に静寂を与える悲しき世界の名前。<br>
+            <p></p>
+             <p>初めに“冬”があった、世界には“冬”しか季節がなく、“冬”は孤独に耐えかね春を創った。
+            <p>“春”は“冬”を、“冬”は“春”を恋い慕い、仲睦まじく繰り返した。</p>
+            <p>冬は空に夏と秋を創った。</p>
+            <p>“春”は“冬”を追いかけ、“夏”と“秋”が続く、季節は“春夏秋冬”と巡るようになったが、</p>
+            <p>“春”と“冬”の蜜月はもう存在しなかった。</p>
+            <p>そこで、“夏”と“秋”は提案をした。</p>
+            <p>大地に住まう者たちに自分たちの役割を任せてはどうかと。</p>
+            <p>“四季”達は人間にその力の一部をお与えになり、冬は永遠に春を愛す時間を得た。</p>
+            <p>神話はそう伝えている。</p>
+              <p></p>
+            <p>春には桜の絨毯を</p>
+            <p>夏には緑の海を</p>
+            <p>秋には銀杏の帳を</p>
+            <p>冬には白銀の揺りかごを</p>
+              <p></p>
+            <p>一年をかけて大地を巡り歩き季節の寵愛を森羅万象に贈る、</p>
+            <p>神々よりその権能を授かりその使命を担うもの、その名を「四季の代行者」。</p>
+              <p></p>            
+             <p>これはその四季の代行者の物語であり、神話の続きであり、</p>
+            <p>人殺しの話であり、救済の話であり、友情の話であり、よくある恋の話であり、</p>
+            <p>そして、人々が織りなす人生の話でもある。</p>
+              <p></p>
+            <p>これは、10年前に奪われた、季節を巡る物語だ。</p>
+                    </div>
+
+                    <!-- 2ページ目（最初は非表示） -->
+                     <div class="story-page" id="storyPage2" style="display: none;">
+                        <p>【オープニング】<br>
+                            世界には、“四季”という名の息吹が巡る。
+                            春の芽吹き、夏の生命、秋の黄昏、そして冬の静寂。</p>
+            
+            <p> 神々に代わり、その天の権能――神通力を身に宿した四人の「代行者」たちが、
+            このヤマトの国に季節の営みをもたらしていた。
+            しかし、10年前のあの日。ヤマトの国から、不意に“春”が掻き消えた。</p>
+            
+            <p> 慈愛に満ちた春の代行者・椿（つばき）の失踪。
+            彼女が姿を消した惨劇の夜を境に、世界から春という温もりは途絶え、
+            爛漫（らんまん）たる花々が咲き誇ることは二度となかったのである。</p>
+            
+            <p> 巡るはずの季節を束ね、世界の調和を司る四季統括者・結城悠太（ゆうき ゆうた）。
+            十年のあいだ、沈黙を保ち続けていた男が、突如としてすべての代行者を強制招集した。
+            不穏な予感と疑念を胸に秘め、夏の代行者ヒマワリ、秋の代行者ダリア、冬の代行者ヒイラギ。
+            彼らはそれぞれの護衛官を伴い、重々しい静寂が満ちる大広間へと集う。</p>
+            
+            <p> そこに、見知らぬ幼き少女がひとり、静かに座っていた。
+            雪のごとき白い和装に身を包み、桜を溶かしたかのような桃色の長髪を流す少女。
+            その面立ちには、年端もいかぬ幼さと、どこか浮世離れした神聖な美しさが同居していた。
+            少女の傍らには、見紛うはずもない一人の女性が佇んでいる。
+            護衛官の黒い隊服を纏い、腰に刀を携えた女性。
+            黒髪の隙間から覗く桃色の双眸。かつて椿に寄り添い続けた、春の護衛官サクラの姿であった。
+            その静謐（せいひつ）な光景を目にした瞬間、居並ぶ代行者たちの胸を、冷たい衝撃が貫いた。</p>
+            
+            <p> この世界に同じ季節の代行者が同時に存在することはできないのである。
+            新たな春の代行者の誕生。それはつまり、
+            十年前、あの日失踪した春の代行者・椿の死。
+            そして今、新たな“春”が、この世界に芽吹いたのだと。</p>
+                        </div>
+
+                        <!-- 3ページ目（最初は非表示） -->
+                         <div class="story-page" id="storyPage3" style="display: none;">
+                            <p>【メインストーリー】<br>
+                                厳寒の冬、真っ只中に集められたホール。
+             そこに佇む異彩を放つ少女に全ての人の目は釘付けになる。<br>
+             ヒイラギ「ま、まさか、新たな春の代行者が現れたのか？」<br>
+             冬の代行者・ヒイラギは驚愕に顔を歪ませたまま、そう言い放った。<br>
+             ヒマワリ「そ、それってまさか…」<br>
+             ダリア「ツバキが死んだのか！？」<br>
+             夏の代行者・ヒマワリの言葉を遮って、秋の代行者・ダリアが声を荒げる。
+             世界に季節を巡らせる代行者は、神々により選ばれ、その使命を全うする。
+             代行者が何らかの理由で命を落とした場合には、
+             代行者の一族から新たな代行者が神々により選ばれる。
+             この世に同じ季節の代行者が複数人存在することはできないのである。
+             ここまで沈黙を貫いていた、今回の召集の張本人”ユウタ”がおもむろに口を開く。<br>
+             ユウタ「遠路はるばるよくぞ参られた。代行者とその従者様方。今回お集まりいただいたのはご察しの通り、新たな春の代行者様が顕現された。ひいては…」<br>
+             ヒイラギ「待て！それは事実か？ツバキは本当に死んだのか？」<br>
+             ユウタ「・・・。ヒジリ、頼む。」<br>
+             ユウタは隣に控えていた副官”ヒジリ”に声をかける。
+             ヒジリはまるでこうなることがわかっているかのように、スクリーンに画像を表示する。
+             そこに写っていたのは、大人になったツバキのもう二度と動くことのない姿だった。<br>
+             ユウタ「つい先日のことになります。我々の捜査によってテロ組織のアジトの所在を突き止め、捜索作戦を決行いたしました。その際、地下室にてツバキ様を発見。その場で死亡が確認されました。」<br>
+             ヒマワリ「ツバキちゃん…。」<br>
+             ヒイラギ「ツバキ…。」<br>
+             ダリア「そ、そんな。ツバキ…。」<br>
+             代行者たちはそれぞれの反応をしめす。
+             しかし、その空気を両断するかのように、ユウタは冷たく言葉を放つ。<br>
+             ユウタ「10年間ヤマトの国に訪れなかった春。ヒナギク様の顕現により、久方ぶりの生命の息吹を感じることが出来るでしょう。」<br>
+             ユウタは淡々とまるで業務連絡でもするかのように言葉を綴る。
+             その態度に代行者たちは眉を顰める。
+             しかし、ユウタは微かに語尾を震わせ、苦難の表情を見せる。<br>
+             ユウタ「私はこの10年間、あの夜を忘れたことはありませんでした。今回の調査である事実が判明しました。あの夜、ツバキ様の誘拐の裏に”内通者の存在があった”と。」<br>
+             ヒジリ「そして、その疑いがあるのはあの日、
+             　　　　あの場所にいた皆さんの中にいると我々は考えています。」<br>
+             ヒイラギ「つまり、四季庁が唐突に我々を収集したのは・・・。」<br>
+             ヒマワリ「ツバキちゃん誘拐の犯人と通じていた裏切者を暴くため？」<br>
+             ダリア「しかし、アジトを捜索したのだろう？尋問すれば裏切者もおのずと出てくるのでは？」<br>
+             ユウタ「今回の作戦で逮捕した者は全員自決しました。そのため情報は少ないのです。」<br>
+             サクラ「お話中のところ失礼いたします。春の代行者護衛官サクラと申します。そちらの情報についてはヒナギク様からお話があります。ヒナギク様、お願いします。」<br>
+             皆の話を遮り、春の護衛官サクラがヒナギクに話を振る。<br>
+             ヒナギク「み、皆さま、お初にお目にかかります。このたび新たに春の代行者として覚醒しました。”ヒナギク”と申します。実は、私が覚醒したとき、断片的にですがツバキ様の記憶を継承しました。」<br>
+             新たな春の代行者ヒナギクは小さな声で驚きの事実を口にした。<br>
+             ヒイラギ「それは本当か！？裏切者は誰だったんだ！！」<br>
+             ヒナギク「ひっ！？」<br>
+             ヒイラギの勢いに押され、まだ幼いヒナギクは身をすくませる。
+             それを見た春の護衛官サクラは憤りを見せ、鋭い目つきで間に入る。<br>
+             サクラ「ヒイラギ様。これ以上我々はあなたの横暴を許すつもりはありません。もし次に、ヒナギク様に対して敵対的な言動を確認次第、我々はあなた方冬との全面対立も辞さないつもりです。」<br>
+             ヒイラギ「…。すまない。」<br>
+             サクラの言葉にヒイラギは全く反抗の意思を見せずに謝罪の言葉を口にする。
+             そこにヒマワリが冷ややかな口調で割り込む。<br>
+             ヒマワリ「私もあの日のことを許したつもりはないから。」<br>
+             ヒイラギ「・・・。」<br>
+             ユウタ「その辺にしていただきたい。建設的な話をしましょう。大切なのは裏切り者は一体誰なのかということです。」<br>
+             こうして、10年前のあの日の悲劇、その裏切者を暴く審問の時間が始まった。</p>
+                            </div>
+                        </div>
+
+                        <!-- モーダル下部のページめくりボタン -->
+                         <div style="display: flex; justify-content: center; align-items: center; gap: 30px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 15px;">
+                            <button class="nav-btn" style="width: 130px; font-size: 1rem; padding: 8px 0;" onclick="changeStoryPage(-1)">◀ 前へ</button>
+                            <button class="nav-btn" style="width: 130px; font-size: 1rem; padding: 8px 0;" onclick="changeStoryPage(1)">次へ ▶</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-overlay" id="charaSheetModal">
+                <div class="modal-container" style="padding: 10px; overflow: hidden;">
+                    <!-- 右上の閉じるボタン -->
+                     <button class="modal-close-btn" onclick="closeModal('charaSheetModal')" style="z-index: 20;">✕</button>
+
+                     <!-- 既存の character_sheet.html をそのまま中に読み込む -->
+                      <iframe src="character_sheet.html" style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                    </div>
+                </div>
+
+                <!-- HOモーダル（iframeで既存ファイルを読み込む） -->
+                 <div class="modal-overlay" id="handbookModal">
+                    <div class="modal-container" style="padding: 10px; overflow: hidden;">
+                        <!-- 右上の閉じるボタン -->
+                         <button class="modal-close-btn" onclick="closeModal('handbookModal')" style="z-index: 20;">✕</button>
+
+                         <!-- 既存のHOファイル（例: handbook.html など）を中に読み込む -->
+                          <iframe src="character_HO.html" style="width: 100%; height: 100%; border: none; background: transparent;"></iframe>
+                        </div>
+                    </div>
+            
+                    <!-- 公開情報モーダル -->
+                     <div class="modal-overlay" id="publicInfoModal">
+                        <div class="modal-container">
+                            <button class="modal-close-btn" onclick="closeModal('publicInfoModal')">✕</button>
+                            <h3 class="modal-title">これまでに公開された情報一覧</h3>
+    
+                            <!-- ここにJavaScriptで公開された情報がズラッと並ぶ -->
+                             <div class="modal-body" id="sharedPublicInfoList" style="overflow-y: auto; color: #ccc; line-height: 1.6; padding: 10px;">
+                                <!-- 動的に要素が追加されます -->
+                                </div>
+                            </div>
+                        </div>
+
+<script>
+    // 全体の進行ステップ（推理披露 ＋ 4人からの質問タイム × 5人分）
+    const reasoningSteps = [
+        // --- 1人目：ヒナギク ---
+        { speaker: "hinagiku", name: "ヒナギク", type: "speech", label: "ヒナギクの推理披露" },
+        { speaker: "hinagiku", name: "ヒナギク", type: "question", questioner: "himawari", label: "ヒマワリからヒナギクへの質問" },
+        { speaker: "hinagiku", name: "ヒナギク", type: "question", questioner: "daria",    label: "ダリアからヒナギクへの質問" },
+        { speaker: "hinagiku", name: "ヒナギク", type: "question", questioner: "hiragi",   label: "ヒイラギからヒナギクへの質問" },
+        { speaker: "hinagiku", name: "ヒナギク", type: "question", questioner: "yuta",     label: "ユウタからヒナギクへの質問" },
+
+        // --- 2人目：ヒマワリ ---
+        { speaker: "himawari", name: "ヒマワリ", type: "speech", label: "ヒマワリの推理披露" },
+        { speaker: "himawari", name: "ヒマワリ", type: "question", questioner: "hinagiku", label: "ヒナギクからヒマワリへの質問" },
+        { speaker: "himawari", name: "ヒマワリ", type: "question", questioner: "daria",    label: "ダリアからヒマワリへの質問" },
+        { speaker: "himawari", name: "ヒマワリ", type: "question", questioner: "hiragi",   label: "ヒイラギからヒマワリへの質問" },
+        { speaker: "himawari", name: "ヒマワリ", type: "question", questioner: "yuta",     label: "ユウタからヒマワリへの質問" },
+
+        // --- 3人目：ダリア ---
+        { speaker: "daria",    name: "ダリア",   type: "speech", label: "ダリアの推理披露" },
+        { speaker: "daria",    name: "ダリア",   type: "question", questioner: "hinagiku", label: "ヒナギクからダリアへの質問" },
+        { speaker: "daria",    name: "ダリア",   type: "question", questioner: "himawari", label: "ヒマワリからダリアへの質問" },
+        { speaker: "daria",    name: "ダリア",   type: "question", questioner: "hiragi",   label: "ヒイラギからダリアへの質問" },
+        { speaker: "daria",    name: "ダリア",   type: "question", questioner: "yuta",     label: "ユウタからダリアへの質問" },
+
+        // --- 4人目：ヒイラギ --
+        { speaker: "hiragi",   name: "ヒイラギ", type: "speech", label: "ヒイラギの推理披露" },
+        { speaker: "hiragi",   name: "ヒイラギ", type: "question", questioner: "hinagiku", label: "ヒナギクからヒイラギへの質問" },
+        { speaker: "hiragi",   name: "ヒイラギ", type: "question", questioner: "himawari", label: "ヒマワリからヒイラギへの質問" },
+        { speaker: "hiragi",   name: "ヒイラギ", type: "question", questioner: "daria",    label: "ダリアからヒイラギへの質問" },
+        { speaker: "hiragi",   name: "ヒイラギ", type: "question", questioner: "yuta",     label: "ユウタからヒイラギへの質問" },
+
+        // --- 5人目：ユウタ ---
+        { speaker: "yuta",     name: "ユウタ",   type: "speech", label: "ユウタの推理披露" },
+        { speaker: "yuta",     name: "ユウタ",   type: "question", questioner: "hinagiku", label: "ヒナギクからユウタへの質問" },
+        { speaker: "yuta",     name: "ユウタ",   type: "question", questioner: "himawari", label: "ヒマワリからユウタへの質問" },
+        { speaker: "yuta",     name: "ユウタ",   type: "question", questioner: "daria",    label: "ダリアからユウタへの質問" },
+        { speaker: "yuta",     name: "ユウタ",   type: "question", questioner: "hiragi",   label: "ヒイラギからユウタへの質問" }
+    ];
+
+    let currentStepIndex = 0; // 現在のステップ番号
+    const myId = localStorage.getItem('selectedChara') || "hinagiku";
+
+    // キャラクターIDを日本語名に変換する辞書
+    const charaNames = {
+      hinagiku: "ヒナギク",
+      himawari: "ヒマワリ",
+      daria: "ダリア",
+      hiragi: "ヒイラギ",
+      yuta: "ユウタ"
+    };
+
+    // 画面の表示を更新する関数
+    function updateReasoningScreen() {
+      const currentStep = reasoningSteps[currentStepIndex];
+      const badge = document.getElementById("topBadge");
+      const overlay = document.getElementById("darkOverlay");
+
+      let isMyTurn = false;
+      let badgeText = "";
+
+      // ステップの種類（推理披露か、質問か）によって表示を切り替え
+      if (currentStep.type === "speech") {
+        if (currentStep.speaker === myId) {
+          isMyTurn = true;
+          badgeText = "あなたの推理披露ターンです";
+        } else {
+          badgeText = `~~ ${charaNames[currentStep.speaker]} の推理披露ターンです ~~`;
+        }
+      } else if (currentStep.type === "question") {
+        if (currentStep.questioner === myId) {
+          isMyTurn = true;
+          badgeText = `あなたから ${charaNames[currentStep.speaker]} への質問ターンです`;
+        } else if (currentStep.speaker === myId) {
+          isMyTurn = true;
+          badgeText = `${charaNames[currentStep.questioner]} からあなたへの質問ターンです`;
+        } else {
+          badgeText = `~~ ${charaNames[currentStep.questioner]} から ${charaNames[currentStep.speaker]} への質疑応答です ~~`;
+        }
+      }
+
+      if (isMyTurn) {
+        badge.className = "top-status-badge badge-blue";
+        badge.innerText = badgeText;
+        overlay.style.opacity = "0"; // 自分の番は暗転なし
+      } else {
+        badge.className = "top-status-badge badge-red";
+        badge.innerText = badgeText;
+        overlay.style.opacity = "1"; // 他人の番は暗転
+      }
+    }
+
+    // 次へ進むボタン
+    function nextTurn() {
+      if (currentStepIndex < reasoningSteps.length - 1) {
+        currentStepIndex++;
+        updateReasoningScreen();
+      } else {
+        location.href = "vote.html"};
+    }
+
+    // 前へ戻るボタン
+    function prevTurn() {
+      if (currentStepIndex > 0) {
+        currentStepIndex--;
+        updateReasoningScreen();
+      }
+    }
+
+    // モーダルを開く
+    function openModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.add("active");
+      } else {
+        alert(`${modalId} の中身はまだ作成中です！`);
+      }
+    }
+
+    // モーダルを閉じる
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.remove("active");
+      }
+    }
+
+    let currentMapPage = 1;
+    const totalMapPages = 2; // 全ページ数
+
+    function changeMapPage(direction) {
+      currentMapPage += direction;
+
+      // ページのループまたは制限（1〜2ページの間で動かす）
+      if (currentMapPage > totalMapPages) {
+        currentMapPage = totalMapPages;
+      } else if (currentMapPage < 1) {
+        currentMapPage = 1;
+      }
+
+      // 表示の切り替え
+      document.getElementById("mapPage1").style.display = (currentMapPage === 1) ? "flex" : "none";
+      document.getElementById("mapPage2").style.display = (currentMapPage === 2) ? "flex" : "none";
+      
+      // ページ番号の文字を更新
+      document.getElementById("mapPageNum").innerText = currentMapPage;
+    }
+
+    // 初期化実行
+    document.addEventListener("DOMContentLoaded", () => {
+      updateReasoningScreen();
+    });
+
+    let currentStoryPage = 1;
+    const totalStoryPages = 3; // 全3ページ
+
+    function changeStoryPage(direction) {
+      currentStoryPage += direction;
+
+      // 1〜3ページの範囲に制限する
+      if (currentStoryPage > totalStoryPages) {
+        currentStoryPage = totalStoryPages;
+      } else if (currentStoryPage < 1) {
+        currentStoryPage = 1;
+      }
+
+      // 各ページの表示・非表示を切り替え
+      document.getElementById("storyPage1").style.display = (currentStoryPage === 1) ? "block" : "none";
+      document.getElementById("storyPage2").style.display = (currentStoryPage === 2) ? "block" : "none";
+      document.getElementById("storyPage3").style.display = (currentStoryPage === 3) ? "block" : "none";
+      
+      // タイトルのページ番号（1/3など）を更新
+      document.getElementById("storyPageNum").innerText = currentStoryPage;
+
+      // ページを切り替えたときに、スクロール位置を一番上にリセットする
+      const modalBody = document.querySelector("#storyModal .modal-body");
+      if (modalBody) {
+        modalBody.scrollTop = 0;
+      }
+    }
+
+    function openPublicInfoModal() {
+      const infoStore = JSON.parse(localStorage.getItem('gamePublicInfo')) || {};
+      const container = document.getElementById("sharedPublicInfoList");
+      container.innerHTML = ""; // いったんクリア
+
+      let count = 0;
+      let debugText = "【デバッグ情報】\n";
+
+      for (let charaId in infoStore) {
+        const items = infoStore[charaId];
+        if (Array.isArray(items)) {
+          items.forEach(item => {
+            debugText += `${charaId}: ${item.title} -> unlocked=${item.unlocked}\n`;
+            if (item && item.unlocked === true) {
+              count++;
+              const itemDiv = document.createElement("div");
+              itemDiv.style.cssText = "background: rgba(25, 25, 35, 0.8); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 12px; margin-bottom: 12px;";
+              itemDiv.innerHTML = `
+                <div style="font-size: 0.9rem; color: #ffe169; margin-bottom: 4px;">【${item.category || "情報"}】 ${item.title || "無題"}</div>
+                <div style="font-size: 1rem; color: #fff; white-space: pre-wrap;">${item.content || "内容なし"}</div>
+              `;
+              container.appendChild(itemDiv);
+            }
+          });
+        }
+      }
+
+      // もし一件もヒットしなかったら、中身の判定どうなったかをモーダル内にズラッと表示する
+      if (count === 0) {
+        const debugDiv = document.createElement("div");
+        debugDiv.style.cssText = "color: #ff9e9e; background: rgba(50,20,20,0.8); padding: 15px; border-radius: 6px; white-space: pre-wrap; font-size: 0.9rem;";
+        debugDiv.innerText = `現在、unlocked: true のデータが0件です。\n\n${debugText}`;
+        container.appendChild(debugDiv);
+      }
+
+      openModal('publicInfoModal');
+    }
+
+  </script>
+
+  <script src="menu.js"></script>
+
+</body>
+</html>

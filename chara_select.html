@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>キャラ選択 | 春夏秋冬〜追憶〜</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background-color: #0f0f12;
+      background-image: url('background/great_houl.png');
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 0 0 0;
+      overflow: hidden;
+    }
+
+    /* 上部：選択中のキャラ名（ヘキサゴンタグ） */
+    .name-badge {
+      background: #ffffff;
+      color: #000000;
+      font-size: 2.2rem;
+      font-weight: bold;
+      padding: 8px 80px;
+      clip-path: polygon(20px 0%, calc(100% - 20px) 0%, 100% 50%, calc(100% - 20px) 100%, 20px 100%, 0% 50%);
+      border: 2px solid #000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+
+    /* 中央：5連カードコンテナ（高さが変化しないように固定高または固定比率にする） */
+    .card-container {
+      position: absolute;
+      top: 15vh;
+      width: 90%;
+      height: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      z-index: 5;
+    }
+
+    /* ラッパー（ロック表示を重ねるため使用） */
+    .chara-card-wrapper {
+      width: 18%;
+      height: 28vh; /* 変更：ここを固定の高さ（例: 28vhなど）にする */
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .chara-card-wrapper.selected {
+      width: 21%;
+      height: 32vh; /* 変更：選択されても高くなりすぎないよう調整、あるいは一定にするなら同じにする */
+      z-index: 10;
+    }
+
+    .chara-card {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background-color: #000;
+      box-sizing: border-box;
+    }
+
+    /* 選択中キャラのスタイル */
+    .chara-card-wrapper.selected .chara-card {
+      border: 4px solid #d35400;
+      box-shadow: 0 0 20px rgba(211, 84, 0, 0.8);
+    }
+
+    /* 🔒 ロック（選択不可）スタイル */
+    .chara-card-wrapper.locked .chara-card {
+      filter: grayscale(100%) brightness(0.3); /* 暗くモノクロ化 */
+      border-color: #444;
+      cursor: not-allowed;
+    }
+
+    /* ロックオーバーレイ（選択済みラベル） */
+    .lock-overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      color: #ff4d4d;
+      font-weight: bold;
+      font-size: 1.2rem;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      pointer-events: none;
+      letter-spacing: 0.1em;
+      border: 1px solid #ff4d4d;
+      box-sizing: border-box;
+    }
+
+    .chara-card-wrapper.locked .lock-overlay {
+      display: flex;
+    }
+
+    /* 下部：メッセージ＆決定ボタンエリア */
+    .bottom-area {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 15px 30px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      z-index: 50;
+    }
+
+    .message-text {
+      font-size: 1.3rem;
+      color: #ffffff;
+      margin: 0;
+      width: 100%;
+      text-align: left;
+    }
+
+    /* 決定ボタン */
+    .confirm-btn {
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      padding: 8px 45px;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+      letter-spacing: 0.2em;
+    }
+
+    .confirm-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* 右上メニューボタンの位置調整 */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- 確認ダイアログ用スタイル --- */
+    .modal-overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 2000;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-box {
+      background: #151518;
+      border: 2px solid #c93b3b;
+      padding: 35px 50px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 0 25px rgba(201, 59, 59, 0.4);
+      max-width: 80%;
+    }
+
+    .modal-text {
+      font-size: 1.5rem;
+      color: #ffffff;
+      margin: 0 0 30px 0;
+      line-height: 1.5;
+    }
+
+    .modal-target-name {
+      color: #e5eb72;
+      font-weight: bold;
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+    }
+
+    .modal-btn {
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      padding: 10px 40px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .modal-btn.yes:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    .modal-btn.no:hover {
+      background: #555555;
+      border-color: #888888;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen" id="gameScreen">
+    
+    <!-- 選択中のキャラ名 -->
+    <div class="name-badge" id="selectedName">ヒナギク</div>
+
+    <!-- 5人のカード横並び -->
+    <div class="card-container" id="cardContainer"></div>
+
+    <!-- 下部操作エリア -->
+    <div class="bottom-area">
+      <p class="message-text">自分のプレイしたいキャラクターを選択してください。</p>
+      <button class="confirm-btn" onclick="openConfirmModal()">決 定</button>
+    </div>
+
+    <!-- 誤タップ防止：確認ポップアップ -->
+    <div class="modal-overlay" id="confirmModal">
+      <div class="modal-box">
+        <p class="modal-text">本当に <span class="modal-target-name" id="modalCharaName">ヒナギク</span> でよろしいですか？</p>
+        <div class="modal-buttons">
+          <button class="modal-btn yes" onclick="proceedSelection()">はい</button>
+          <button class="modal-btn no" onclick="closeConfirmModal()">いいえ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const charaData = [
+      { id: "hinagiku", name: "ヒナギク", img: "chara/icon_hinagiku.png" },
+      { id: "himawari", name: "ヒマワリ", img: "chara/icon_himawari.png" },
+      { id: "daria",    name: "ダリア",    img: "chara/icon_daria.png" },
+      { id: "hiragi",   name: "ヒイラギ",  img: "chara/icon_hiragi.png" },
+      { id: "yuta",   name: "ユウタ",    img: "chara/icon_yuta.png" }
+    ];
+
+    // --- 安全なストレージの読み込みと自動リセット ---
+    let lockedCharas = JSON.parse(localStorage.getItem('takenCharas')) || [];
+    const myPreviousChara = localStorage.getItem('selectedChara');
+
+    if (myPreviousChara && lockedCharas.includes(myPreviousChara)) {
+      lockedCharas = lockedCharas.filter(id => id !== myPreviousChara);
+      localStorage.setItem('takenCharas', JSON.stringify(lockedCharas));
+      localStorage.removeItem('selectedChara');
+    }
+
+    let selectedIndex = 0; // ← 宣言はここで1回だけ！
+
+    function init() {
+      const container = document.getElementById('cardContainer');
+      container.innerHTML = '';
+
+      const firstAvailableIndex = charaData.findIndex(c => !lockedCharas.includes(c.id));
+      if (firstAvailableIndex !== -1) {
+        selectedIndex = firstAvailableIndex;
+      }
+
+      charaData.forEach((c, index) => {
+        const wrapper = document.createElement('div');
+        const isLocked = lockedCharas.includes(c.id);
+        wrapper.className = `chara-card-wrapper ${isLocked ? 'locked' : ''}`;
+        wrapper.id = `wrapper-${index}`;
+
+        const img = document.createElement('img');
+        img.src = c.img;
+        img.className = 'chara-card';
+        img.onclick = () => selectCard(index);
+
+        const lockText = document.createElement('div');
+        lockText.className = 'lock-overlay';
+        lockText.innerText = '選択済み';
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(lockText);
+        container.appendChild(wrapper);
+      });
+
+      updateDisplay();
+    }
+
+    function selectCard(index) {
+      const chosen = charaData[index];
+      if (lockedCharas.includes(chosen.id)) {
+        return;
+      }
+      selectedIndex = index;
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      if (charaData.every(c => lockedCharas.includes(c.id))) {
+        document.getElementById('selectedName').innerText = "満員";
+        return;
+      }
+
+      document.getElementById('selectedName').innerText = charaData[selectedIndex].name;
+      
+      charaData.forEach((_, idx) => {
+        const wrapper = document.getElementById(`wrapper-${idx}`);
+        if (wrapper && !wrapper.classList.contains('locked')) {
+          if (idx === selectedIndex) {
+            wrapper.classList.add('selected');
+          } else {
+            wrapper.classList.remove('selected');
+          }
+        }
+      });
+    }
+
+    function openConfirmModal() {
+      const chosen = charaData[selectedIndex];
+      if (lockedCharas.includes(chosen.id)) return;
+      document.getElementById('modalCharaName').innerText = chosen.name;
+      document.getElementById('confirmModal').style.display = 'flex';
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').style.display = 'none';
+    }
+
+    function proceedSelection() {
+      const chosen = charaData[selectedIndex];
+
+      localStorage.setItem('selectedChara', chosen.id);
+
+      lockedCharas.push(chosen.id);
+      localStorage.setItem('takenCharas', JSON.stringify(lockedCharas));
+      
+      window.location.href = "chara_pswd.html";
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+  <script src="menu.js"></script>
+</body>
+</html>

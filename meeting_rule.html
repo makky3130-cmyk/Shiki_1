@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>会議仕様解説</title>
+  <style>
+    /* 全体レイアウト */
+    body {
+      background-color: #0f0f12;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    /* メインコンテンツ枠 */
+    .container {
+      width: 90%;
+      max-width: 700px;
+      background: rgba(20, 20, 25, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+      box-sizing: border-box;
+      margin: 40px 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 480px; /* 高さの変動を防ぐ */
+    }
+
+    /* ページ見出し */
+    h1 {
+      font-size: 1.8rem;
+      color: #ffffff;
+      text-align: center;
+      border-bottom: 1px solid #c93b3b;
+      padding-bottom: 10px;
+      margin-top: 0;
+      margin-bottom: 15px;
+      letter-spacing: 0.1em;
+    }
+
+    /* ページ番号インジケーター */
+    .page-indicator {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 20px;
+    }
+
+    /* 各ページコンテンツエリア */
+    .page-content {
+      flex: 1; /* ボタン部分を下に押し下げる */
+      display: none; /* 基本は非表示 */
+      animation: fadeIn 0.4s ease;
+    }
+
+    /* 表示中のページ */
+    .page-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-content h2 {
+      font-size: 1.2rem;
+      color: #e5eb72;
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+
+    /* 注意事項リスト */
+    .note-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 20px 0;
+      text-align: left;
+      line-height: 1.8;
+      font-size: 0.95rem;
+    }
+
+    .note-list li {
+      margin-bottom: 15px;
+      padding-left: 1.2em;
+      text-indent: -1.2em;
+    }
+
+    .note-list li::before {
+      content: "◆ ";
+      color: #c93b3b;
+    }
+
+    /* ボタンエリア */
+    .btn-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* 共通ボタン装飾 */
+    .nav-btn, .back-btn, .close-btn, .menu-btn {
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .nav-btn:hover, .back-btn:hover, .close-btn:hover, .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      border-color: rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    /* 右上メニューボタンの位置定義 */
+    .menu-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+
+    /* サイドメニュー用スタイル（menu.js用） */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6); z-index: 1001;
+      opacity: 0; visibility: hidden; transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px; width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5); z-index: 1002;
+      transition: right 0.3s ease; padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>会議解説</h1>
+    <div class="page-indicator" id="pageIndicator">PAGE 1 / 3</div>
+
+    <!-- 1ページ目：一般的・利用規約上の注意事項 -->
+    <div class="page-content active" id="page-1">
+      <h2>■ 仕様①</h2>
+      <ul class="note-list">
+        <li>画面上のキャラアイコンをタッチすることで該当キャラの公開済み情報を確認できます。</li>
+        <li>自分の情報を公開したい場合は、中央から公開したい情報を選択してください。</li>
+        <li>公開したい情報のパスワードが表示されます。数字を全体に読み上げてください。</li>
+        <li>右下の情報一覧にパスワードを打ち込むと以降その情報は『公開状態』になります。</li>
+      </ul>
+    </div>
+
+    <!-- 2ページ目：ゲームプレイ・マダミス上の注意事項 -->
+    <div class="page-content" id="page-2">
+      <h2>■ 仕様②</h2>
+      <ul class="note-list">
+        <li>左下の地図アイコンから四季庁内部のマップを確認できます。</li>
+        <li>左下のノートアイコンから今までのストーリーを読み返すことができます。</li>
+        <li>左下の人型アイコンから自分のキャラの情報（HO,シート など）を確認できます。</li>
+      </ul>
+    </div>
+    
+    <!-- 3ページ目：ゲームプレイ・マダミス上の注意事項の続き -->
+    <div class="page-content" id="page-3">
+      <h2>■ プレイ上の注意点</h2>
+      <ul class="note-list">
+        <li>全体に何かを公開した場合、誰かを指名し、情報の開示を求めることができます。
+            <br>※ただし公開する情報は公開するプレイヤー自身が選択します。
+            <br>　指名されたプレイヤーは自分の情報を１つ必ず公開してください。
+        </li>
+        <li>第一会議は20分間です。
+          <br>※延長はできませんが区切りいいところで止めます。
+        </li>
+      </ul>
+    </div>
+
+    <!-- ページ操作・移動ボタン領域 -->
+    <div class="btn-container">
+      <button class="nav-btn" id="prevBtn" onclick="changePage(-1)" disabled>前へ</button>
+      <button class="back-btn" onclick="location.href='first_meeting.html'">会議を始める</button>
+      <button class="nav-btn" id="nextBtn" onclick="changePage(1)">次へ</button>
+    </div>
+  </div>
+
+  <!-- ページめくり用スクリプト -->
+  <script>
+    let currentPage = 1;
+    const totalPages = 3; // ページを増やしたい場合はここを書き換えます
+
+    function changePage(direction) {
+      // 現在のページを非表示
+      document.getElementById(`page-${currentPage}`).classList.remove('active');
+
+      // ページ数を更新
+      currentPage += direction;
+
+      // 新しいページを表示
+      document.getElementById(`page-${currentPage}`).classList.add('active');
+
+      // インジケーターとボタンの状態を更新
+      document.getElementById('pageIndicator').innerText = `PAGE ${currentPage} / ${totalPages}`;
+      document.getElementById('prevBtn').disabled = (currentPage === 1);
+      document.getElementById('nextBtn').disabled = (currentPage === totalPages);
+    }
+  </script>
+
+  <!-- 自動メニュー読み込みJS -->
+  <script src="menu.js"></script>
+</body>
+</html>

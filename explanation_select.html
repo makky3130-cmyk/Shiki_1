@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>エンドストーリー選択 | 解説・答え合わせ</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #ffffff;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background-image: url('background/sora.png');
+      background-color: #0b0b14;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 30px 40px;
+    }
+
+    .top-title-frame {
+      border: 2px solid #ffffff;
+      border-radius: 8px;
+      padding: 10px 50px;
+      background: rgba(10, 10, 20, 0.85);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+    }
+    .top-title {
+      font-size: 1.6rem;
+      letter-spacing: 0.1em;
+      color: #ffffff;
+      margin: 0;
+      text-align: center;
+    }
+
+    .chara-container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      width: 100%;
+      margin: auto 0;
+    }
+
+    .chara-card {
+      width: 17%;
+      background: rgba(10, 10, 20, 0.9);
+      border: 2px solid #555;
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+
+    .chara-card:hover {
+      border-color: #ffe169;
+      transform: translateY(-5px);
+    }
+
+    .chara-img-wrap {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      background: #1a1a24;
+      overflow: hidden;
+    }
+
+    .chara-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+    }
+
+    .chara-name {
+      text-align: center;
+      padding: 12px 0;
+      font-size: 1.2rem;
+      letter-spacing: 0.08em;
+      background: #12121c;
+      border-top: 1px solid #333;
+    }
+
+    .bottom-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
+    }
+
+    .action-btn {
+      background: rgba(10, 10, 20, 0.85);
+      border: 2px solid #ffffff;
+      color: #ffffff;
+      font-size: 1.2rem;
+      font-family: 'Sawarabi Mincho', serif;
+      padding: 10px 40px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: #ffe169;
+      color: #ffe169;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen">
+    
+    <div class="top-title-frame">
+      <h1 class="top-title">エンドストーリー選択</h1>
+    </div>
+
+    <!-- 5人のキャラクターカード（クリックで直接エンドストーリーへ飛ぶ） -->
+    <div class="chara-container">
+      <div class="chara-card" onclick="openEndStory('hinagiku')">
+        <div class="chara-img-wrap"><img src="chara/icon_hinagiku.png" alt="ヒナギク"></div>
+        <div class="chara-name">ヒナギク</div>
+      </div>
+      <div class="chara-card" onclick="openEndStory('himawari')">
+        <div class="chara-img-wrap"><img src="chara/icon_himawari.png" alt="ヒマワリ"></div>
+        <div class="chara-name">ヒマワリ</div>
+      </div>
+      <div class="chara-card" onclick="openEndStory('daria')">
+        <div class="chara-img-wrap"><img src="chara/icon_daria.png" alt="ダリア"></div>
+        <div class="chara-name">ダリア</div>
+      </div>
+      <div class="chara-card" onclick="openEndStory('hiragi')">
+        <div class="chara-img-wrap"><img src="chara/icon_hiragi.png" alt="ヒイラギ"></div>
+        <div class="chara-name">ヒイラギ</div>
+      </div>
+      <div class="chara-card" onclick="openEndStory('yuta')">
+        <div class="chara-img-wrap"><img src="chara/icon_yuta.png" alt="ユウタ"></div>
+        <div class="chara-name">ユウタ</div>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <button class="action-btn" onclick="location.href='kaisetsu.html'">戻る</button>
+      <button class="action-btn" onclick="location.href='title.html'">タイトルへ</button>
+    </div>
+
+  </div>
+
+  <script>
+    // キャラをクリックしたら、即座にIDを保存して end_story.html へジャンプ！
+    function openEndStory(charaId) {
+      localStorage.setItem('endId', charaId);
+      location.href = 'end_story.html';
+    }
+  </script>
+</body>
+</html>

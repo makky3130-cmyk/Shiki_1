@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>キャラクター認証 | 春夏秋冬〜追憶〜</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ゲーム画面全体のフレーム（16:9維持） */
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background: url('background/great_houl.png') center/cover no-repeat #0f0f12;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* 上部ヘッダーバッジ */
+    .header-bar {
+      position: absolute;
+      top: 15px;
+      left: 25px;
+      z-index: 10;
+    }
+    .top-badge {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      color: #ffffff;
+      padding: 6px 20px;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+      border-left: 3px solid #5a78d0;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+
+    /* 認証ボックス本体 */
+    .auth-box {
+      background: rgba(10, 10, 15, 0.94);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+      padding: 25px 40px;
+      text-align: center;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+      max-width: 520px;
+      width: 85%;
+    }
+
+    .auth-box h2 {
+      color: #ffe169;
+      font-size: 1.5rem;
+      margin-top: 0;
+      margin-bottom: 5px;
+    }
+
+    .target-chara {
+      color: #79c0ff;
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+    }
+
+    .auth-box p {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+    /* パスワード表示ディスプレイ */
+    .display-box {
+      width: 220px;
+      margin: 0 auto 15px auto;
+      padding: 10px;
+      font-size: 1.6rem;
+      letter-spacing: 0.4em;
+      text-align: center;
+      background: #121218;
+      color: #ffe169;
+      border: 2px solid #ffe169;
+      border-radius: 6px;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+    }
+
+    /* エラー・成功メッセージ */
+    .error-msg {
+      color: #ff6b6b;
+      font-size: 0.9rem;
+      height: 18px;
+      margin-bottom: 10px;
+    }
+
+    /* テンキーのグリッドレイアウト (3列) */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 65px);
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .key-btn {
+      background: rgba(30, 30, 45, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 1.3rem;
+      font-family: 'Sawarabi Mincho', serif;
+      height: 45px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    .key-btn:hover {
+      background: rgba(50, 50, 75, 0.95);
+      border-color: #ffe169;
+      color: #ffe169;
+      transform: translateY(-2px);
+    }
+
+    .key-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* 決定ボタン（✓）の特別カラー */
+    .key-btn.enter-btn {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      border-color: #5a78d0;
+      color: #ffe169;
+      font-weight: bold;
+    }
+    .key-btn.enter-btn:hover {
+      background: linear-gradient(135deg, #384c8f, #202d5a);
+      border-color: #ffe169;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen">
+    <div class="header-bar">
+      <div class="top-badge">5. ログイン認証</div>
+    </div>
+
+    <div class="auth-box">
+      <h2>秘匿パスワード認証</h2>
+      <div class="target-chara">選択キャラクター：<span id="charaDisplayName">読み込み中...</span></div>
+      <p>GMから教えれてもらったパスワードを入力してください。<br>3桁の数字を入力してください。</p>
+
+      <!-- パスワード入力ディスプレイ -->
+      <div class="display-box" id="passwordDisplay">- - -</div>
+      
+      <div class="error-msg" id="errorMsg"></div>
+
+      <!-- テンキーエリア -->
+      <div class="keypad">
+        <button class="key-btn" onclick="pressKey('1')">1</button>
+        <button class="key-btn" onclick="pressKey('2')">2</button>
+        <button class="key-btn" onclick="pressKey('3')">3</button>
+        <button class="key-btn" onclick="pressKey('4')">4</button>
+        <button class="key-btn" onclick="pressKey('5')">5</button>
+        <button class="key-btn" onclick="pressKey('6')">6</button>
+        <button class="key-btn" onclick="pressKey('7')">7</button>
+        <button class="key-btn" onclick="pressKey('8')">8</button>
+        <button class="key-btn" onclick="pressKey('9')">9</button>
+        <button class="key-btn" onclick="pressKey('C')">C</button>
+        <button class="key-btn" onclick="pressKey('0')">0</button>
+        <button class="key-btn enter-btn" onclick="pressKey('ENTER')">✓</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 各キャラクターごとの正しい3桁パスワード
+    const characterPasswords = {
+      hinagiku: "012",
+      himawari: "345",
+      daria:    "678",
+      hiragi:   "910",
+      yuta:     "123"
+    };
+
+    // キャラクターIDを日本語名に変換
+    const charaNames = {
+      hinagiku: "ヒナギク",
+      himawari: "ヒマワリ",
+      daria:    "ダリア",
+      hiragi:   "ヒイラギ",
+      yuta:     "ユウタ"
+    };
+
+    let currentInput = "";
+    const selectedChara = localStorage.getItem('selectedChara') || "hinagiku";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const nameSpan = document.getElementById("charaDisplayName");
+      nameSpan.innerText = charaNames[selectedChara] || selectedChara;
+      updateDisplay();
+    });
+
+    // テンキーが押されたときの処理
+    function pressKey(key) {
+      const errorMsg = document.getElementById("errorMsg");
+      errorMsg.innerText = ""; // エラー表示をクリア
+
+      if (key === 'C') {
+        // クリアボタン
+        currentInput = "";
+      } else if (key === 'ENTER') {
+        // 決定ボタン
+        if (currentInput.length === 3) {
+          checkPassword();
+        } else {
+          errorMsg.innerText = "3桁の数字を入力してください。";
+        }
+      } else {
+        // 数字ボタン（最大3桁まで）
+        if (currentInput.length < 3) {
+          currentInput += key;
+          // 3桁に達したら自動でチェックを実行することも可能ですが、今回は✓ボタンで確定するようにしています
+        }
+      }
+      updateDisplay();
+    }
+
+    // 画面の表示を更新
+    function updateDisplay() {
+      const display = document.getElementById("passwordDisplay");
+      if (currentInput.length === 0) {
+        display.innerText = "- - -";
+      } else {
+        // 入力された文字数に合わせてマスクまたはそのまま表示（今回は入力された数字を表示）
+        let formatted = currentInput.split("").join(" ");
+        if (currentInput.length === 1) formatted += " - -";
+        if (currentInput.length === 2) formatted += " -";
+        display.innerText = formatted;
+      }
+    }
+
+    // パスワードの正誤判定
+    function checkPassword() {
+      const errorMsg = document.getElementById("errorMsg");
+      const correctPassword = characterPasswords[selectedChara];
+
+      if (currentInput === correctPassword) {
+        errorMsg.style.color = "#79c0ff";
+        errorMsg.innerText = "認証成功！キャラクターシートを開きます...";
+        
+        setTimeout(() => {
+          location.href = "character_sheet.html";
+        }, 600);
+      } else {
+        errorMsg.style.color = "#ff6b6b";
+        errorMsg.innerText = "パスワードが違います。";
+        currentInput = "";
+        updateDisplay();
+      }
+    }
+  </script>
+
+</body>
+</html>

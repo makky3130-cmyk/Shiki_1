@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オープニング | 春夏秋冬〜追億〜</title>
+  <style>
+    /* 全体レイアウト：画面中央に16:9枠を配置 */
+    body {
+      background-color: #050507;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    button {
+      background-color: transparent;
+      color: #e0e0e0;
+      border: 1px solid #ffffff;
+      padding: 12px 30px;
+      font-size: 1rem;
+      font-family: inherit;
+      margin: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    button:hover {
+      background-color: #ffffff;
+      color: #111111;
+      box-shadow: 0 0 15px rgba(250, 252, 232, 0.6);
+    }
+
+    /* 16:9表示のゲーム画面枠（画面の上下左右にはみ出ないよう制限） */
+    .game-screen {
+      width: min(90vw, 160vh); /* 画面幅90%か、高さから計算した幅の小さい方 */
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;        /* 画面の縦幅90%を超えないようにする */
+      background-color: #0f0f12;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .header-bar {
+      position: absolute;
+      top: 10px;
+      left: 0px;
+      right: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      z-index: 10;
+    }
+
+    /* 左上：固定バッジ */
+    .top-badge {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      color: #ffffff;
+      padding: 6px 20px;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+      border-left: 3px solid #5a78d0;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+
+    /* 画面下部のメッセージウィンドウ */
+    .message-box {
+      width: 100%;
+      height: 28%;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.75));
+      border-top: 1px solid rgba(201, 59, 59, 0.6);
+      padding: 15px 25px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    /* テキスト表示エリア */
+    .message-text {
+      font-size: 1.3rem;
+      line-height: 1.7;
+      color: #ffffff;
+      letter-spacing: 0.05em;
+      white-space: pre-wrap;
+      max-height: 100%;
+      padding-right: 5px;
+    }
+
+    /* 送りボタンエリア */
+    .controls {
+      display: flex;
+      justify-content: flex-end;
+      gap: 15px;
+    }
+
+    /* 共通ボタン装飾 */
+    .action-btn {
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 24px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      border-color: rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .action-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* 右上メニューボタンの位置定義 */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* サイドメニュー用スタイル（menu.js用） */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6); z-index: 1001;
+      opacity: 0; visibility: hidden; transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px; width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5); z-index: 1002;
+      transition: right 0.3s ease; padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0,0,0,0.6); color: #fff; padding: 8px; cursor: pointer; }
+
+    /* 立ち絵全体を包むコンテナ */
+    .chara-container {
+      position: absolute;
+      bottom: 28%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      height: 70%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 10px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* 各立ち絵画像 */
+    .chara-img {
+      max-height: 100%;
+      max-width: 25%;
+      object-fit: contain;
+      transition: opacity 0.2s ease;
+    }
+
+    /* 徐々にカラーから白黒（モノクロ）へ変化するアニメーション */
+    @keyframes fadeToGrayscale {
+      from {
+        filter: grayscale(0%);
+      }
+      to {
+        filter: grayscale(100%);
+      }
+    }
+
+    /* アニメーションを適用するクラス */
+    .game-screen.grayscale-anim {
+      animation: fadeToGrayscale 3s ease-in-out forwards;
+    }
+
+    /* 上から落ちてくるアニメーション */
+    @keyframes dropFadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(-120px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* dropIn 指定がある時だけ適用されるクラス */
+    .chara-img.drop-anim {
+      opacity: 0;
+      animation: dropFadeIn 2.8s cubic-bezier(0.25, 1, 0.5, 1) both;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 16:9のゲーム画面 -->
+  <div class="game-screen" id="gameScreen">
+
+    <div class="header-bar">
+      <div class="top-badge">2. オープニング</div>
+    </div>
+
+    <!-- キャラクター立ち絵表示エリア（最大4体） -->
+    <div class="chara-container">
+      <img id="charaImage1" class="chara-img" src="" alt="" style="display: none;">
+      <img id="charaImage2" class="chara-img" src="" alt="" style="display: none;">
+      <img id="charaImage3" class="chara-img" src="" alt="" style="display: none;">
+      <img id="charaImage4" class="chara-img" src="" alt="" style="display: none;">
+    </div>
+    
+    <!-- メッセージウィンドウ -->
+    <div class="message-box">
+      <div class="message-text" id="storyText"></div>
+    </div>
+
+  </div>
+
+  <!-- テキスト＆シナリオ定義 -->
+  <script>
+    const storyLines = [
+      { text: "世界には、“四季”という名の息吹が巡る。春の芽吹き、夏の生命、秋の黄昏、そして冬の静寂。", bg: "4seasons.png", chara: ["black_hinagiku.png", "black_himawari.png", "black_daria.png", "black_hiragi.png"] },
+      { text: "神々に代わり、その天の権能――神通力を身に宿した四人の「代行者」たちが、このヤマトの国に季節の営みをもたらしていた。", bg: "japan.png", chara: ["black_hinagiku.png", "black_himawari.png", "black_daria.png", "black_hiragi.png"] },
+      { text: "しかし、10年前のあの日。ヤマトの国から、不意に“春”が掻き消えた。慈愛に満ちた春の代行者・椿（つばき）の失踪。", bg: "japan_3season.png" },
+      { text: "彼女が姿を消した惨劇の夜を境に、世界から春という温もりは途絶え、爛漫たる花々が咲き誇ることは二度となかったのである。", bg: "japan_3season.png" },
+      { text: "巡るはずの季節を束ね、世界の調和を司る四季統括者・結城悠太（ゆうき ゆうた）。", bg: "season_agency.png", chara: "title_yuta.png" },
+      { text: "十年のあいだ、沈黙を保ち続けていた男が、突如としてすべての代行者を強制招集した。", bg: "season_agency.png", chara: "title_yuta.png" },
+      { text: "不穏な予感と疑念を胸に秘め、夏の代行者ヒマワリ、秋の代行者ダリア、そして冬の代行者ヒイラギ", bg: "great_houl.png", chara: ["title_himawari.png", "title_daria.png","title_hiragi.png"] , dropIn: true},
+      { text: "彼らはそれぞれの護衛官を伴い、重々しい静寂が満ちる大広間へと集う。", bg: "great_houl.png" },
+      { text: "そこに、見知らぬ幼き少女がひとり、静かに座っていた。雪のごとき白い和装に身を包み、桜を溶かしたかのような桃色の長髪を流す少女。", bg: "great_houl_1.png" },
+      { text: "その面立ちには、年端もいかぬ幼さと、どこか浮世離れした神聖な美しさが同居していた。少女の傍らには、見紛うはずもない一人の女性が佇んでいる。", bg: "great_houl_1.png" },
+      { text: "護衛官の黒い隊服を纏い、腰に刀を携えた女性。黒髪の隙間から覗く桃色の双眸。かつて椿に寄り添い続けた、春の護衛官サクラの姿であった。", bg: "great_houl_1.png" },
+      { text: "その静謐（せいひつ）な光景を目にした瞬間、居並ぶ代行者たちの胸を、冷たい衝撃が貫いた。", bg: "great_houl_1.png" },
+      { text: "この世界に同じ季節の代行者が同時に存在することはできないのである。新たな春の代行者の誕生。それはつまり、", bg: "Tsubaki_with_spring.png" },
+      { text: "十年前、あの日失踪した春の代行者・椿の死。そして今、新たな“春”が、この世界に芽吹いたのだと。", bg: "Tsubaki_with_spring.png", grayscale: true }
+    ];    
+  </script>
+  <script>
+   const nextPageUrl = "chara_intro.html";
+  </script>
+
+  <!-- スクリプトの読み込み（HTML要素の後に記述） -->
+  <script src="story.js"></script>
+  <script src="menu.js"></script>
+</body>
+</html>

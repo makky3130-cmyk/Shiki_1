@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オリジナルマーダーミステリー</title>
+
+  <!-- Google Fonts の読み込み -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sawarabi+Mincho&display=swap" rel="stylesheet">
+
+  <style>
+    /* 全体（画面全体）の設定 */
+    body {
+      background-color: #0f0f12;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;               /* paddingを0にして余計な押し出しを防ぐ */
+      position: relative;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;           /* 画面の高さを100%固定にする */
+  
+      /* 上下左右の中央にコンテンツを配置する設定 */
+      display: flex;
+      justify-content: center; /* 左右中央 */
+      align-items: center;     /* 上下中央 */
+    }
+
+    /* メインコンテンツの領域（画面中央に浮かせる） */
+    .content-container {
+      position: relative;
+      z-index: 10;            /* 動画や背景よりも手前 */
+      width: 100%;
+      max-width: 800px;       /* 横幅が広がりすぎないように制限 */
+      padding: 20px;          /* 内側に適度な余白 */
+      box-sizing: border-box;
+    }
+
+    /* -------------------------------------------
+       ★ 動画・背景関連のスタイル（ここへ追加していきます）
+    ------------------------------------------- */
+    /* 1. 白系のグラデーション背景 */
+.bg-animation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+
+  /* 初期状態も白系の光に設定 */
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
+
+  /* 呼吸するようにゆっくり明滅（ゆったり10秒ループ） */
+  animation: whitePulse 10s infinite ease-in-out;
+}
+
+/* 白い光がゆっくり明滅するアニメーション */
+@keyframes whitePulse {
+  0%, 100% {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+  }
+  50% {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, rgba(0, 0, 0, 0) 65%);
+  }
+}
+
+    /* 背景動画 */
+    .bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      pointer-events: none;
+      z-index: 1; /* グラデーションの上に配置 */
+      mix-blend-mode: screen; /* 黒を透明化して背景と合成 */
+    }
+
+    /* -------------------------------------------
+       文字・ボタンのスタイル（前面に表示）
+    ------------------------------------------- */
+    .content-container {
+      position: relative;
+      z-index: 10; /* 動画や背景よりも手前に表示 */
+    }
+
+    /* サブタイトル */
+    .subtitle {
+      font-size: 2rem;
+      color: #ffffff;
+      letter-spacing: 0.3em;
+      margin-bottom: 10px;
+    }
+
+    /* メインタイトル */
+h1 {
+  font-size: 3.5rem;
+  color: #ffffff;
+  margin-top: 0;
+  margin-bottom: 30px;
+  letter-spacing: 0.1em;
+  animation: titleGlow 40s infinite linear; /* 四季の影アニメーション */
+  
+  /* 単色の text-shadow をアニメーション指定に変更 */
+  /* 40秒かけて四季の色にじんわり変化（ループ） */
+  animation: titleGlow 40s infinite linear;
+}
+
+/* ★ タイトル文字の影（四季のカラーチェンジ）アニメーション */
+@keyframes titleGlow {
+  /* 春：桜色の柔らかい発光 */
+  0%, 100% {
+    text-shadow: 
+      0 0 10px rgba(255, 183, 197, 0.8),
+      0 0 20px rgba(255, 183, 197, 0.4);
+  }
+
+  /* 夏：新緑（緑）の発光 */
+  20% {
+    text-shadow: 
+      0 0 10px rgba(50, 205, 50, 0.8),
+      0 0 20px rgba(50, 205, 50, 0.4);
+  }
+
+  /* 晩秋：銀杏（ゴールド・黄色）の発光 */
+  40% {
+    text-shadow: 
+      0 0 10px rgba(230, 180, 30, 0.8),
+      0 0 20px rgba(230, 180, 30, 0.4);
+  }
+
+  /* 秋：紅葉（深い赤）の発光 */
+  60% {
+    text-shadow: 
+      0 0 10px rgba(220, 40, 40, 0.8),
+      0 0 20px rgba(220, 40, 40, 0.4);
+  }
+
+  /* 冬：雪・氷（青みがかった白）の発光 */
+  80% {
+    text-shadow: 
+      0 0 10px rgba(200, 230, 255, 0.8),
+      0 0 20px rgba(200, 230, 255, 0.4);
+  }
+}
+
+    /* あらすじ */
+    p {
+      line-height: 2;
+      color: #f42828;
+      max-width: 600px;
+      margin: 0 auto 40px auto;
+      font-size: 2.2rem;
+    }
+
+    /* ボタン共通 */
+    button {
+      background-color: transparent;
+      color: #e0e0e0;
+      border: 1px solid #ffffff;
+      padding: 12px 30px;
+      font-size: 1rem;
+      font-family: inherit;
+      margin: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: block;        /* 中央揃え用にブロック化 */
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    button:hover {
+      background-color: #ffffff;
+      color: #111111;
+      box-shadow: 0 0 15px rgba(250, 252, 232, 0.6);
+    }
+
+    .start-btn {
+      margin-top: 40px;
+      width: 220px;
+    }
+
+    .explanation-btn {
+      margin-top: 15px;
+      width: 220px;
+    }
+
+    /* 右上メニューボタン */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <script>
+    function toggleMenu() {
+      const menu = document.getElementById('sideMenu');
+      const overlay = document.getElementById('menuOverlay');
+      
+      // active クラスを交互に付け外しする
+      menu.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+  </script>
+</body>
+<body>
+
+  <!-- 四季のグラデーション背景 -->
+  <div class="bg-animation"></div>
+
+  <!-- 黒背景の動画エフェクト（自動再生・ループ・消音） -->
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="movies/title.mp4" type="video/mp4">
+  </video>
+
+  <!-- メインコンテンツ（文字とボタン） -->
+  <div class="content-container">
+    <div class="subtitle">オリジナルマーダーミステリー</div>
+    <h1>春夏秋冬～追憶～</h1>
+
+    <p>（完）<br>
+    Thank you for playing this game </p>
+
+    <!-- ゲーム開始ボタン（→ opening.html へ） -->
+    <button class="start-btn" onclick="location.href='atogaki.html'">あとがき</button>
+    <!-- 注意事項説明ボタン（→ explanation.html へ） -->
+    <button class="explanation-btn" onclick="location.href='kaisetsu.html'">解説へ</button>
+  </div>
+
+  <script src="menu.js"></script>
+</body>
+</html>

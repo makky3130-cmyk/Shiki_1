@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第二会議フェーズ | 春夏秋冬〜追憶〜</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* 1. ゲーム画面全体のフレーム（16:9維持） */
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background: url('background/great_houl.png') center/cover no-repeat #0f0f12;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .header-bar {
+      position: absolute;
+      top: 15px;
+      left: 0px;
+      right: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start; /* ★上揃えにする */
+      z-index: 10;
+    }
+
+    /* ★左側グループを縦並びにする設定 */
+    .header-left-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px; /* バッジとキャラ名の間の隙間 */
+    }
+
+    .top-badge {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      color: #ffffff;
+      padding: 6px 20px;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+      border-left: 3px solid #5a78d0;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+      display: inline-block; /* 幅が文字分だけに収まるようにする */
+    }
+
+    .my-player-display {
+      font-size: 1.05rem;
+      color: #cccccc;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.9);
+      margin-left: 2px; /* 少しだけ右にずらすと綺麗 */
+    }
+
+    /* 右上メニューボタン */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+
+    /* 上部キャラクターアイコンバーのコンテナ */
+    .chara-icon-bar {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      width: 380px;          /* ちょうどアイコン4.5個分くらいの幅にして、右側に飛び出さないようにする */
+      overflow-x: auto;      /* はみ出た「証言」アイコンはスライドして表示 */
+      padding: 5px 8px;
+      z-index: 10;
+      scrollbar-width: none; /* Firefox用スクロールバー非表示 */
+    }
+    .chara-icon-bar::-webkit-scrollbar {
+      display: none;         /* Chrome/Safari用スクロールバー非表示 */
+    }
+
+    /* 各アイコンのサイズを大きく復活させる */
+    .chara-icon-wrapper {
+      width: 62px;           /* アイコンの大きさをしっかり確保 */
+      height: 62px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      overflow: hidden;
+      cursor: pointer;
+      flex-shrink: 0;        /* 縮まないように固定 */
+      transition: all 0.2s ease;
+      background: #111;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+    }
+    .chara-icon-wrapper.active {
+      border-color: #ffe169;
+      box-shadow: 0 0 15px rgba(255, 225, 105, 0.7);
+      transform: scale(1.06);
+    }
+    .chara-icon {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* 4. 左下：3段縦並びツールボタン */
+    .left-tools {
+      position: absolute;
+      bottom: 25px;
+      left: 25px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      z-index: 10;
+    }
+    .tool-btn {
+      width: 65px;
+      height: 65px;
+      background: rgba(15, 15, 20, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .tool-btn:hover {
+      background: rgba(40, 40, 55, 0.9);
+      border-color: #ffe169;
+      transform: translateY(-2px);
+    }
+    .tool-btn img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+    }
+
+    /* マップ画像用のスタイル */
+    .tool-map-img {
+      width: 100%;
+      height: calc(100% - 30px); /* 枠の中にぴったり収める */
+      max-height: 380px;         /* 大きくなりすぎないようにストップをかける */
+      object-fit: contain;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.1);
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* 5. メイン情報コンテンツエリア（左右並び） */
+    .main-content-area {
+      position: absolute;
+      bottom: 25px;
+      left: 110px;
+      right: 25px;
+      height: 68%;
+      display: flex;
+      gap: 20px;
+      z-index: 10;
+    }
+
+    .info-panel {
+      background: rgba(10, 10, 15, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 20px 25px;
+      box-sizing: border-box;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
+    }
+
+    /* ④ 中央下：情報公開パネル（ボタンが増えてもスクロールで綺麗に収まる設計） */
+    .publish-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .panel-title {
+      font-size: 1.4rem;
+      margin-top: 5px;
+      margin-bottom: 20px;
+      letter-spacing: 0.05em;
+      color: #f0f0f0;
+      text-align: center;
+    }
+    .publish-btn-group {
+      width: 85%;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding-right: 5px;
+    }
+    .publish-btn-group::-webkit-scrollbar { width: 4px; }
+    .publish-btn-group::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
+
+    .publish-btn {
+      width: 100%;
+      padding: 12px 0;
+      background: transparent;
+      border: 2px solid rgba(255, 255, 255, 0.7);
+      color: #ffffff;
+      font-size: 1.2rem;
+      font-family: inherit;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .publish-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: #ffe169;
+      color: #ffe169;
+      box-shadow: 0 0 10px rgba(255, 225, 105, 0.3);
+    }
+    .publish-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* ⑤ 右下：他キャラの公開情報表示パネル */
+    .public-info-panel {
+      flex: 1.2;
+      display: flex;
+      flex-direction: column;
+    }
+    .public-header {
+      font-size: 1.3rem;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .target-speaker-name {
+      font-weight: bold;
+      color: #ff9ebb;
+    }
+    .public-list {
+      overflow-y: auto;
+      flex: 1;
+      padding-right: 8px;
+    }
+    .public-list::-webkit-scrollbar { width: 6px; }
+    .public-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+    .public-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
+
+    .info-item {
+      margin-bottom: 20px;
+      padding: 10px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.02);
+    }
+    .info-item-title {
+      font-size: 1.15rem;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+    .info-item-body {
+      font-size: 1rem;
+      color: #cccccc;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .info-item-body.unreleased {
+      color: #777777;
+    }
+    .unlock-hint {
+      font-size: 0.85rem;
+      color: #ffe169;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* --- ゲーム固有のモーダル（サブ選択やパスワード入力など）の初期非表示設定 --- */
+    .modal-overlay {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      background: rgba(0, 0, 0, 0.75) !important;
+      backdrop-filter: blur(4px);
+      z-index: 10000 !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      opacity: 0 !important;
+      visibility: hidden !important; /* 普段は隠しておく */
+      pointer-events: none !important;
+      transition: all 0.3s ease !important;
+    }
+
+    /* .active がついたときだけ表示する */
+    .modal-overlay.active {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+
+    /* 右上の赤い×ボタン */
+    .tool-red-close-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: #c93b3b;
+      border: none;
+      color: #fff;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+    .tool-red-close-btn:hover {
+      background: #ff5252;
+      transform: scale(1.1);
+      box-shadow: 0 0 10px rgba(255, 82, 82, 0.8);
+    }
+
+    .tool-modal-title {
+      font-size: 1.4rem;
+      color: #ffe169;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 12px;
+      margin-top: 0;
+      margin-right: 40px;
+      letter-spacing: 0.05em;
+    }
+
+    .tool-modal-body {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      margin-top: 15px;
+      margin-bottom: 15px;
+    }
+    .tool-modal-body.scrollable {
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+    .tool-modal-body::-webkit-scrollbar { width: 6px; }
+    .tool-modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
+
+    /* ページ切り替えの制御用（最初は非表示） */
+    .tool-page-content {
+      display: none;
+      height: 100%;
+    }
+    .tool-page-content.active-page {
+      display: block; /* 選択されているページだけ表示 */
+    }
+
+    /* マップ画像用スタイル（サイズ拡大版） */
+    .tool-map-img {
+      width: 100%;
+      height: 100%;       /* 枠の高さ目一杯まで広げる */
+      max-height: 460px;  /* 以前より大きく表示（必要に応じて 450〜480px あたりで微調整できます） */
+      object-fit: contain;
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.1);
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* 題名・本文のスタイル */
+    .content-subtitle {
+      font-size: 1.2rem;
+      color: #ffffff;
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-left: 3px solid #ffe169;
+      padding-left: 10px;
+    }
+    .content-text {
+      font-size: 1.05rem;
+      line-height: 0.9.;
+      color: #cccccc;
+      white-space: pre-wrap;
+      margin: 0;
+    }
+
+    /* 下部のページめくりコントローラー */
+    .tool-pager {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      padding-top: 12px;
+    }
+    .pager-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      padding: 6px 20px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+    .pager-btn:hover {
+      background: #ffe169;
+      color: #000;
+      border-color: #ffe169;
+    }
+    .pager-indicator {
+      font-size: 1rem;
+      color: #aaa;
+      font-family: monospace;
+      letter-spacing: 0.1em;
+    }
+
+    /* サブ選択メニュー（確定情報1〜5を選ぶ画面）のスタイル */
+    .sub-select-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 450px;
+      margin: 10px auto;
+    }
+    .sub-select-item-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      padding: 14px 20px;
+      font-size: 1.1rem;
+      font-family: inherit;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+    .sub-select-item-btn:hover {
+      background: rgba(255,255,255,0.2);
+      border-color: #ffe169;
+      color: #ffe169;
+    }
+
+    /* パスワード入力パッド用スタイル */
+    .password-pad {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      height: 100%;
+    }
+    .password-display-box {
+      font-size: 1.8rem;
+      font-family: monospace;
+      letter-spacing: 0.5em;
+      background: #000;
+      border: 2px solid #ffe169;
+      padding: 10px 30px;
+      border-radius: 6px;
+      color: #ffe169;
+      min-width: 150px;
+      text-align: center;
+    }
+    .num-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 70px);
+      gap: 12px;
+    }
+    .num-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.4);
+      color: #fff;
+      font-size: 1.4rem;
+      padding: 15px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+    .num-btn:hover {
+      background: #ffe169;
+      color: #000;
+      border-color: #ffe169;
+    }
+
+    /* システムメニュー専用スタイル */
+    .menu-item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-width: 400px;
+      margin: 20px auto 0;
+    }
+    .menu-action-btn {
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      font-size: 1.1rem;
+      font-family: inherit;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .menu-action-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: #ffe169;
+      color: #ffe169;
+    }
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* 第一会議フェーズ用の次へ進むボタン */
+    .next-phase-btn {
+      position: absolute;
+      top: 70px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      padding: 8px 30px;
+      font-size: 1.1rem;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 0.15em;
+      transition: all 0.3s ease;
+      z-index: 20; /* メニューボタンと被らないように手前に置く */
+    }
+    .next-phase-btn:hover {
+      background: #ffffff;
+      color: #000000;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+    }
+
+    /* モーダルの背景（画面全体を暗くする） */
+    .tool-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7); /* 暗い背景 */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999; /* 一番手前に表示する */
+    }
+
+    /* モーダルの箱本体 */
+    .tool-modal-container {
+      background-color: #1a1a1a; /* ダークな背景色 */
+      border: 1px solid #444;
+      border-radius: 8px;
+      color: #fff;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    /* --- 新・ツールモーダル専用の完全非表示＆中央配置スタイル --- */
+    .tool-modal-overlay {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      background: rgba(0, 0, 0, 0.85) !important;
+      backdrop-filter: blur(5px);
+      z-index: 99999 !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      opacity: 0 !important;
+      visibility: hidden !important; /* 普段は完全に隠す */
+      pointer-events: none !important;
+      transition: all 0.3s ease !important;
+    }
+
+    /* アイコンが押されて active がついた時だけ画面中央に現れる */
+    .tool-modal-overlay.active {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+
+    .tool-modal-container {
+      width: 75vw !important;
+      height: 75vh !important;
+      max-width: 900px !important;
+      max-height: 650px !important;
+      background: #0f0f15 !important;
+      border: 2px solid rgba(255, 255, 255, 0.3) !important;
+      border-radius: 10px !important;
+      position: relative !important;
+      padding: 30px !important;
+      box-sizing: border-box !important;
+      display: flex !important;
+      flex-direction: column !important;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.9) !important;
+      color: #e0e0e0 !important;
+    }
+
+    /* 右上の赤い×ボタンの固定 */
+    .tool-red-close-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 20px !important;
+      background: #c93b3b !important;
+      border: none !important;
+      color: #fff !important;
+      width: 35px !important;
+      height: 35px !important;
+      border-radius: 50% !important;
+      font-size: 1.2rem !important;
+      font-weight: bold !important;
+      cursor: pointer !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      z-index: 10 !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen" id="gameScreen">
+    
+    <div class="header-bar">
+      <!-- ★左側に寄せたいものをまとめるグループ箱 -->
+      <div class="header-left-group">
+        <div class="top-badge">13. 第二会議フェーズ</div>
+        <div class="my-player-display">
+          操作キャラ：<span id="myPlayerName" style="color: #ffe169; font-weight: bold;">---</span>
+        </div>
+      </div>
+
+      <button class="next-phase-btn" onclick="goNextPhase()"> 推理披露へ進む</button>
+    </div>
+
+    <!-- ② 中央上：キャラアイコン一覧 -->
+    <div class="chara-icon-bar" id="charaIconBar"></div>
+
+    <!-- ④ ⑤ メインコンテンツエリア -->
+    <div class="main-content-area">
+      <!-- ④ 中央下：情報公開パネル -->
+      <!-- ★ここにボタンを増やす（自由にコピペして追加できます） -->
+      <div class="info-panel publish-panel">
+        <div class="panel-title">何を公開しますか？</div>
+        <div class="publish-btn-group">
+          <button class="publish-btn" onclick="openSubSelectModal('確定情報')">確 定 情 報</button>
+          <button class="publish-btn" onclick="openSubSelectModal('アイテム')">ア イ テ ム</button>
+          <button class="publish-btn" onclick="openSubSelectModal('秘密')">秘 密</button>
+          <button class="publish-btn" onclick="openSubSelectModal('証言')">証  言</button>
+        </div>
+      </div>
+
+      <!-- ⑤ 右下：公開情報確認パネル -->
+      <div class="info-panel public-info-panel">
+        <div class="public-header">
+          <span class="target-speaker-name" id="targetSpeakerName">ヒナギク</span>
+          <span>が公開している情報</span>
+        </div>
+        <div class="public-list" id="publicList"></div>
+      </div>
+    </div>
+
+    <!-- ================= モーダルレイヤー群 ================= -->
+
+    
+
+    <!-- ★追加：「確定情報」などを押したあとに1〜5番を選ぶサブメニューモーダル -->
+    <div class="modal-overlay" id="subSelectModal">
+      <div class="modal-container" style="max-width: 500px; height: auto; max-height: 80%;">
+        <button class="modal-close-btn" onclick="closeModal('subSelectModal')">✕</button>
+        <h3 class="modal-title" id="subSelectModalTitle">公開する項目を選択</h3>
+        <div class="modal-body">
+          <div class="sub-select-list" id="subSelectList">
+            <!-- JSで動的に1〜5番のボタンを生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- パスワード入力モーダル（他の人の未公開情報を開くとき用） -->
+    <div class="modal-overlay" id="passwordModal">
+      <div class="modal-container" style="max-width: 450px; height: 420px;">
+        <button class="modal-close-btn" onclick="closeModal('passwordModal')">✕</button>
+        <h3 class="modal-title" id="passwordModalTitle">パスワード認証</h3>
+        <div class="modal-body">
+          <div class="password-pad">
+            <p style="font-size: 0.95rem; color: #aaa; margin:0;">発表された3桁のパスワードを入力してください</p>
+            <div class="password-display-box" id="passwordInputDisplay">---</div>
+            <div class="num-grid">
+              <button class="num-btn" onclick="inputNum('1')">1</button>
+              <button class="num-btn" onclick="inputNum('2')">2</button>
+              <button class="num-btn" onclick="inputNum('3')">3</button>
+              <button class="num-btn" onclick="inputNum('4')">4</button>
+              <button class="num-btn" onclick="inputNum('5')">5</button>
+              <button class="num-btn" onclick="inputNum('6')">6</button>
+              <button class="num-btn" onclick="inputNum('7')">7</button>
+              <button class="num-btn" onclick="inputNum('8')">8</button>
+              <button class="num-btn" onclick="inputNum('9')">9</button>
+              <button class="num-btn" onclick="clearPassword()" style="font-size: 1rem;">C</button>
+              <button class="num-btn" onclick="inputNum('0')">0</button>
+              <button class="num-btn" onclick="submitPassword()" style="background:#ffe169; color:#000; font-size:1rem; font-weight:bold;">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 自分の情報のパスワード確認用モーダル（サブ選択から項目を選んだときに番号を表示） -->
+    <div class="modal-overlay" id="myPublishModal">
+      <div class="modal-container" style="max-width: 450px; height: auto;">
+        <button class="modal-close-btn" onclick="closeModal('myPublishModal')">✕</button>
+        <h3 class="modal-title" id="myPublishTitle">情報公開コードの確認</h3>
+        <div class="modal-body" style="text-align: center; padding: 20px 0;">
+          <p style="font-size: 1rem; color: #ddd; margin-bottom: 15px;">他のプレイヤーに以下の3桁の番号を伝えてください</p>
+          <div style="font-size: 2.5rem; font-family: monospace; letter-spacing: 0.3em; color: #ffe169; background: #000; padding: 15px; border-radius: 8px; border: 2px solid #ffe169; display:inline-block;" id="mySecretCodeDisplay">
+            2-6-7
+          </div>
+          <p style="font-size: 0.9rem; color: #888; margin-top: 20px;">※このコードをチャット等で伝え、全員に自分の端末で入力してもらいましょう。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- システムメニューモーダル -->
+    <div class="modal-overlay" id="systemMenuModal">
+      <div class="modal-container" style="max-width: 500px; height: auto;">
+        <button class="modal-close-btn" onclick="closeModal('systemMenuModal')">✕</button>
+        <h3 class="modal-title">システムメニュー</h3>
+        <div class="modal-body">
+          <div class="menu-item-list">
+            <div class="setting-row">
+              <span>BGM 音量</span>
+              <input type="range" min="0" max="100" value="70">
+            </div>
+            <div class="setting-row">
+              <span>SE 音量</span>
+              <input type="range" min="0" max="100" value="80">
+            </div>
+            <button class="menu-action-btn" onclick="toggleFullScreen()">フルスクリーン切り替え</button>
+            <button class="menu-action-btn" onclick="alert('ルールヘルプを表示します')">全体ルール確認</button>
+            <button class="menu-action-btn" style="border-color: #ff5252; color: #ff5252;" onclick="if(confirm('タイトル画面に戻りますか？')) location.href='chara_select.html';">キャラ選択へ戻る</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- パスワード間違いなどのゲーム内通知用モーダル -->
+    <div class="modal-overlay" id="customAlertModal" style="z-index: 100000;">
+      <div class="modal-container" style="max-width: 380px; height: auto; text-align: center; padding: 25px;">
+        <h3 class="modal-title" id="customAlertTitle" style="color: #ff5252; border-bottom: none; margin-bottom: 10px;">認証失敗</h3>
+        <p id="customAlertText" style="font-size: 1.1rem; color: #fff; margin: 15px 0; line-height: 1.6;">パスワードが違います。</p>
+        <button onclick="closeModal('customAlertModal')" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 8px 30px; font-family: inherit; font-size: 1rem; cursor: pointer; border-radius: 4px; margin-top: 10px;">閉じる</button>
+      </div>
+    </div>
+
+    <!-- 画面の一番下やbody内の適当な場所にこれを置いておく -->
+     <div class="tool-modal-overlay" id="confirmModal" style="display: none;">
+      <div class="tool-modal-container" style="max-width: 400px; text-align: center;">
+        <h3>フェーズ移行の確認</h3>
+        <p style="margin: 20px 0;">第二会議フェーズを終了し、<br>推理披露フェーズへ進みますか？</p>
+        <div style="display: flex; justify-content: center; gap: 20px;">
+          <button onclick="closeConfirmModal()" class="pager-btn">いいえ</button>
+          <button onclick="executeNextPhase()" class="pager-btn" style="background-color: #8b0000; border-color: #ff4d4d;">はい</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // キャラクターデータ
+    const characters = [
+      { id: "hinagiku", name: "ヒナギク", color: "#ff9ebb", icon: "chara/icon_hinagiku.png", unread: 0 },
+      { id: "himawari", name: "ヒマワリ", color: "#ffe169", icon: "chara/icon_himawari.png", unread: 0 },
+      { id: "daria",    name: "ダリア",    color: "#ff5252", icon: "chara/icon_daria.png",    unread: 0 },
+      { id: "hiragi",   name: "ヒイラギ",  color: "#64b5f6", icon: "chara/icon_hiragi.png",    unread: 0 },
+      { id: "yuta",     name: "ユウタ",    color: "#ba68c8", icon: "chara/icon_yuta.png",    unread: 0 }
+    ];
+
+    // ★各情報のデータ構造を整理：category（確定情報、アイテム、秘密など）と number（1, 2, 3...）を持たせる
+    let publicInfoStore = JSON.parse(localStorage.getItem('gamePublicInfo')) || {
+      hinagiku: [
+        { id: "hina_1", category: "確定情報", number: 1, title: "確定情報 1", content: "ツバキは四季庁内では目立たないように行動していた", password: "482", unlocked: false },
+        { id: "hina_2", category: "確定情報", number: 2, title: "確定情報 2", content: "ツバキにとってヒイラギは特別だった", password: "915", unlocked: false },
+        { id: "hina_3", category: "確定情報", number: 3, title: "確定情報 3", content: "ダリアはツバキが誘うまで四季会議に参加したことがなかった", password: "137", unlocked: false },
+        { id: "hina_4", category: "確定情報", number: 4, title: "確定情報 4", content: "ツバキにとってユウタは父親の変わりのような存在だった", password: "684", unlocked: false },
+        { id: "hina_5", category: "確定情報", number: 5, title: "確定情報 5", content: "ツバキの遺品の中に壊れたネックレスがあった", password: "741", unlocked: false },
+        { id: "hina_6", category: "アイテム", number: 1, title: "アイテム", content: "『ヒイラギ様へ』と書かれた手紙", password: "259", unlocked: false },
+        { id: "hina_7", category: "秘密",     number: 1, title: "秘密", content: "あなたは誘拐当日の記憶が一切ありません", password: "038", unlocked: false },
+        { id: "hina_8", category: "証言", number: 1, title: "証言", content: "", password: "", unlocked: false }
+      ],
+      himawari: [
+        { id: "hima_1", category: "確定情報", number: 1, title: "確定情報 1", content: "18:00～18:30までツバキと話していた", password: "592", unlocked: false },
+        { id: "hima_2", category: "確定情報", number: 2, title: "確定情報 2", content: "夕食中のヒイラギは機嫌が悪かった", password: "826", unlocked: false },
+        { id: "hima_3", category: "確定情報", number: 3, title: "確定情報 3", content: "19:45～20：45までツバキ、サクラと大浴場にいた", password: "360", unlocked: false },
+        { id: "hima_4", category: "確定情報", number: 4, title: "確定情報 4", content: "20：45頃、外から帰ってきたユウタに出会った", password: "614", unlocked: false },
+        { id: "hima_5", category: "確定情報", number: 5, title: "確定情報 5", content: "22:05～22:10に別館へのゲートをくぐっている", password: "087", unlocked: false },
+        { id: "hima_6", category: "アイテム", number: 1, title: "アイテム", content: "今日の報告をするためのレポート", password: "531", unlocked: false },
+        { id: "hima_7", category: "秘密", number: 1, title: "秘密", content: "あなたはツバキとヒイラギが駆け落ちすることを聞かされていた", password: "294", unlocked: false },
+        { id: "hima_8", category: "証言", number: 1, title: "証言", content: "", password: "", unlocked: false }
+      ],
+      daria: [
+        { id: "dari_1", category: "確定情報", number: 1, title: "確定情報 1", content: "18:10～18:30まであなたは対客室にいた", password: "750", unlocked: false },
+        { id: "dari_2", category: "確定情報", number: 2, title: "確定情報 2", content: "18:35～19:30の間にツバキに手紙を手渡した", password: "419", unlocked: false },
+        { id: "dari_3", category: "確定情報", number: 3, title: "確定情報 3", content: "20:45に車で外に出かけた", password: "983", unlocked: false },
+        { id: "dari_4", category: "確定情報", number: 4, title: "確定情報 4", content: "21:35～21:45に別館へのセキュリティゲートをくぐった", password: "205", unlocked: false },
+        { id: "dari_5", category: "確定情報", number: 5, title: "確定情報 5", content: "22:00頃、四季庁外のバーにいた", password: "672", unlocked: false },
+        { id: "dari_6", category: "アイテム", number: 1, title: "アイテム", content: "本館と別館を通るためのセキュリティカード\nなぜか２枚所持している", password: "148", unlocked: false },
+        { id: "dari_7", category: "秘密", number: 1, title: "秘密", content: "あなたはあの日、外部からの来客の対応をしていた", password: "893", unlocked: false },
+        { id: "dari_8", category: "証言", number: 1, title: "証言", content: "", password: "", unlocked: false }
+      ],
+      hiragi: [
+        { id: "hira_1", category: "確定情報", number: 1, title: "確定情報 1", content: "8:45～9:00会場に入ってきたダリアは最初にツバキに話かけた", password: "326", unlocked: false },
+        { id: "hira_2", category: "確定情報", number: 2, title: "確定情報 2", content: "18:35～19:00の間ヒマワリと本館で話していた", password: "507", unlocked: false },
+        { id: "hira_3", category: "確定情報", number: 3, title: "確定情報 3", content: "19:00～食堂に向かうと食事中のダリアとツバキがいた", password: "162", unlocked: false },
+        { id: "hira_4", category: "確定情報", number: 4, title: "確定情報 4", content: "20:00ダリアと大浴場ですれ違った", password: "739", unlocked: false },
+        { id: "hira_5", category: "確定情報", number: 5, title: "確定情報 5", content: "21:40サクラがツバキを探しまわっていた", password: "045", unlocked: false },
+        { id: "hira_6", category: "アイテム", number: 1, title: "アイテム", content: "ミオに任せた運搬用トラックの手配書\n※地下駐車場に22:00と書かれている", password: "814", unlocked: false },
+        { id: "hira_7", category: "秘密", number: 1, title: "秘密", content: "ツバキに冬の権能を込めたネックレスを渡していた", password: "391", unlocked: false },
+        { id: "hira_8", category: "証言", number: 1, title: "証言", content: "", password: "", unlocked: false }
+      ],
+      yuta: [
+        { id: "yuta_1", category: "確定情報", number: 1, title: "確定情報 1", content: "8:20分頃、ヒイラギとツバキは２人で談笑していた", password: "627", unlocked: false },
+        { id: "yuta_2", category: "確定情報", number: 2, title: "確定情報 2", content: "19:00～19:45までヒマワリ、ヒイラギと3人で食堂にいた", password: "958", unlocked: false },
+        { id: "yuta_3", category: "確定情報", number: 3, title: "確定情報 3", content: "20:45頃ダリアが急いだ様子で外出していった", password: "230", unlocked: false },
+        { id: "yuta_4", category: "確定情報", number: 4, title: "確定情報 4", content: "20:45頃ヒマワリが外の空気を吸いたいと外に出た", password: "471", unlocked: false },
+        { id: "yuta_5", category: "確定情報", number: 5, title: "確定情報 5", content: "爆発の後不審な車が四季庁の地下駐車場から走り去った", password: "096", unlocked: false },
+        { id: "yuta_6", category: "アイテム", number: 1, title: "アイテム", content: "当時の監視カメラ\n22:00に爆発が起こり、カメラは故障したようだ", password: "583", unlocked: false },
+        { id: "yuta_7", category: "秘密", number: 1, title: "秘密", content: "【ユウタ専用】能力：『統括者権限』", password: "124", unlocked: false },
+        { id: "yuta_8", category: "証言", number: 1, title: "証言", content: "", password: "", unlocked: false }
+      ]
+      
+    };
+
+    let activeCharaId = "hinagiku";
+    let remainingSeconds = 1200; // 20分
+
+    let currentTargetItem = null; 
+    let currentInputPassword = "";
+
+    // 起動時の初期化
+    document.addEventListener("DOMContentLoaded", () => {
+      // 証言データのテンプレート
+      const allTestimoniesTemplate = [
+        { id: "testimony_sakura", category: "証言", title: "サクラの証言", content: "ツバキ様から目を離したのは20：50頃に薬に買いに行った時からだ。", password: "765", unlocked: false },
+        { id: "testimony_suiren", category: "証言", title: "スイレンの証言", content: "あの日、冬の護衛官ミオから地下駐車場方面からは外れて問題ないと言われた。", password: "308", unlocked: false },
+        { id: "testimony_rindo", category: "証言", title: "リンドウの証言", content: "警備主任だった先代が最後に残した言葉は「意図せず、梯子は外される」だった。", password: "849", unlocked: false },
+        { id: "testimony_mio", category: "証言", title: "ミオの証言", content: "爆発音の後、別館へ向かう人だかりとは反対に向かう警備人がいた。", password: "612", unlocked: false },
+        { id: "testimony_hijiri", category: "証言", title: "ヒジリの証言", content: "別館へのセキュリティゲートのログでは、入館者に対し退館者が1人足りていない。", password: "937", unlocked: false }
+      ];
+
+      // まだ publicInfoStore に証言が入っていなければ、全キャラクターのストアにデフォルトで全証言を未公開状態で持たせる
+      let infoStore = JSON.parse(localStorage.getItem('gamePublicInfo')) || {};
+      characters.forEach(chara => {
+        if (!infoStore[chara.id]) infoStore[chara.id] = [];
+        allTestimoniesTemplate.forEach(t => {
+          if (!infoStore[chara.id].some(item => item.id === t.id)) {
+            infoStore[chara.id].push({ ...t });
+          }
+        });
+      });
+      localStorage.setItem('gamePublicInfo', JSON.stringify(infoStore));
+
+      renderCharaIcons();
+      
+      const myId = localStorage.getItem('selectedChara') || "hinagiku";
+      const myChar = characters.find(c => c.id === myId);
+      if (myChar) {
+        const nameElem = document.getElementById("myPlayerName");
+        if (nameElem) {
+          nameElem.innerText = myChar.name;
+          nameElem.style.color = myChar.color; 
+        }
+      }
+
+      selectChara(myId);
+    });
+
+    // --- キャラアイコン描画（5人 ＋ 右端にスライドして出てくる「証言」アイコン） ---
+    function renderCharaIcons() {
+      const container = document.getElementById("charaIconBar");
+      container.innerHTML = "";
+
+      // 5人のキャラクターアイコンを描画
+      characters.forEach(chara => {
+        const wrapper = document.createElement("div");
+        wrapper.className = `chara-icon-wrapper ${chara.id === activeCharaId ? 'active' : ''}`;
+        wrapper.id = `icon-${chara.id}`;
+        wrapper.onclick = () => selectChara(chara.id);
+
+        const img = document.createElement("img");
+        img.className = "chara-icon";
+        img.src = chara.icon;
+        img.alt = chara.name;
+        wrapper.appendChild(img);
+        container.appendChild(wrapper);
+      });
+
+      // 右端の「証言一覧」用アイコン
+      const testimonyWrapper = document.createElement("div");
+      testimonyWrapper.className = `chara-icon-wrapper ${activeCharaId === 'testimony_tab' ? 'active' : ''}`;
+      testimonyWrapper.id = `icon-testimony_tab`;
+      testimonyWrapper.onclick = () => selectTestimonyTab();
+
+      const testimonyImg = document.createElement("div");
+      testimonyImg.className = "chara-icon";
+      testimonyImg.style.cssText = "background: linear-gradient(135deg, #2b3b70, #182245); display: flex; justify-content: center; align-items: center; color: #ffe169; font-size: 0.85rem; font-weight: bold; border-radius: 50%;";
+      testimonyImg.innerText = "証言";
+
+      testimonyWrapper.appendChild(testimonyImg);
+      container.appendChild(testimonyWrapper);
+    }
+
+    // --- 「証言」アイコンが選ばれたとき ---
+    function selectTestimonyTab() {
+      activeCharaId = 'testimony_tab';
+
+      document.querySelectorAll(".chara-icon-wrapper").forEach(el => el.classList.remove("active"));
+      document.getElementById(`icon-testimony_tab`).classList.add("active");
+
+      // タイトルをきれいに「証言一覧」にする（文字溢れを防ぐ）
+      const speakerNameElem = document.getElementById("targetSpeakerName");
+      speakerNameElem.innerText = "証言一覧";
+      speakerNameElem.style.color = "#ffe169";
+
+      renderTestimonyList();
+    }
+
+    // --- 右側パネルに「証言一覧」を描画する（証言だけに完全特化させる） ---
+    function renderTestimonyList() {
+      const listContainer = document.getElementById("publicList");
+      listContainer.innerHTML = "";
+
+      // 自分のデータ（または全ストア）から、「カテゴリーが『証言』のもの」だけを完全に抽出する
+      const myId = localStorage.getItem('selectedChara') || "hinagiku";
+      const infoList = publicInfoStore[myId] || [];
+      
+      // ★ここで "証言" 以外のデータ（秘密や確定情報、アイテムなど）を完全に排除する！
+      const testimonies = infoList.filter(item => item.category === "証言");
+
+      if (testimonies.length === 0) {
+        listContainer.innerHTML = `<p style="text-align:center; color:#888; margin-top:40px;">証言データがありません。</p>`;
+        return;
+      }
+
+      testimonies.forEach((item) => {
+        // 元の配列内でのインデックスを探す（パスワード解除時に使う）
+        const actualIndex = infoList.findIndex(i => i.id === item.id);
+
+        const itemDiv = document.createElement("div");
+        itemDiv.className = "info-item";
+
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "info-item-title";
+        titleDiv.innerHTML = `<span>${item.title}</span>`;
+
+        const bodyDiv = document.createElement("div");
+
+        if (item.unlocked) {
+          bodyDiv.className = "info-item-body";
+          bodyDiv.innerText = item.content;
+        } else {
+          bodyDiv.className = "info-item-body unreleased";
+          bodyDiv.innerHTML = `まだ公開されていません。<br><span class="unlock-hint" onclick="requestUnlock('${myId}', ${actualIndex})">🔒 パスワードを入力して解除する</span>`;
+        }
+
+        itemDiv.appendChild(titleDiv);
+        itemDiv.appendChild(bodyDiv);
+        listContainer.appendChild(itemDiv);
+      });
+    }
+
+    // --- キャラ選択切り替え ---
+    function selectChara(charaId) {
+      activeCharaId = charaId;
+      const targetChara = characters.find(c => c.id === charaId);
+
+      document.querySelectorAll(".chara-icon-wrapper").forEach(el => el.classList.remove("active"));
+      document.getElementById(`icon-${charaId}`).classList.add("active");
+
+      const speakerNameElem = document.getElementById("targetSpeakerName");
+      speakerNameElem.innerText = targetChara.name;
+      speakerNameElem.style.color = targetChara.color;
+
+      renderPublicList(charaId);
+    }
+
+    // --- 右下：キャラクターごとの情報リストの描画（※ここでは「証言」を絶対に表示させない） ---
+    function renderPublicList(charaId) {
+      const listContainer = document.getElementById("publicList");
+      listContainer.innerHTML = "";
+
+      const infoList = publicInfoStore[charaId] || [];
+
+      // ★修正ポイント：
+      // キャラクターごとのタブでは、category が "証言" 以外のもの（確定情報・アイテム・秘密など）だけを表示する！
+      const characterOnlyInfo = infoList.filter(item => item.category !== "証言");
+
+      if (characterOnlyInfo.length === 0) {
+        listContainer.innerHTML = `<p style="text-align:center; color:#888; margin-top:40px;">公開されている情報はありません。</p>`;
+        return;
+      }
+
+      characterOnlyInfo.forEach((item) => {
+        // 元の配列内でのインデックス（パスワード解除時に使うため元の配列から探す）
+        const actualIndex = infoList.findIndex(i => i.id === item.id);
+
+        const itemDiv = document.createElement("div");
+        itemDiv.className = "info-item";
+
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "info-item-title";
+        titleDiv.innerHTML = `<span>${item.title}</span>`;
+
+        const bodyDiv = document.createElement("div");
+
+        if (item.unlocked) {
+          bodyDiv.className = "info-item-body";
+          bodyDiv.innerText = item.content;
+        } else {
+          bodyDiv.className = "info-item-body unreleased";
+          bodyDiv.innerHTML = `まだ公開されていません。<br><span class="unlock-hint" onclick="requestUnlock('${charaId}', ${actualIndex})">🔒 パスワードを入力して解除する</span>`;
+        }
+
+        itemDiv.appendChild(titleDiv);
+        itemDiv.appendChild(bodyDiv);
+        listContainer.appendChild(itemDiv);
+      });
+    }
+
+    // --- 中央下のボタンを押したとき、自分が所持しているそのカテゴリーのアイテムだけを選ぶサブメニューを開く ---
+    function openSubSelectModal(categoryName) {
+      const myId = localStorage.getItem('selectedChara') || "hinagiku";
+      const myInfoList = publicInfoStore[myId] || [];
+
+      // ★修正ポイント：
+      // もしカテゴリーが「証言」の場合は、「自分が実際に獲得したもの（または特定の条件で所持しているもの）」だけに絞り込む。
+      // ここでは例として、「unlockedがtrueであるもの」または「特定の証人から得たもの」、あるいは各キャラが所持すべき証言としてフィルタリングします。
+      // もし「自分が選んだ証人の証言」だけを持たせたい場合は、所持判定の条件を調整できます。
+      
+      let filteredList = [];
+
+      if (categoryName === "証言") {
+        // 例：「証言」カテゴリーの中で、自分が持っているもの、あるいは特定の証言だけに絞る場合
+        // ここでは「各キャラクターが本来持っている証言（または初期状態で所持しているもの）」のみを表示するロジックにします。
+        // ※ もし「サクラの証言」などを自分が選んで手に入れた場合のみにしたい場合は、その判定を入れます。
+        
+        // ここではシンプルに、自分が所持しているアイテムのうち category === "証言" で、
+        // かつ「自分がその証言を入手している（フラグなど）」ものだけに絞ります。
+        // もし全員が全証言のコードを見せられてしまうのを防ぎたい場合、
+        // 「自分が獲得した証人データのID」をlocalStorageに持たせておき、それと一致するものだけを出すのが一番確実です。
+        
+        const myAcquiredWitness = localStorage.getItem('selectedWitnessChar'); // 例: "サクラ"
+        
+        filteredList = myInfoList.filter(item => {
+          if (item.category !== "証言") return false;
+          // もし自分が選んだ証人の証言名（例: "サクラの証言"）と一致するものだけを表示する場合：
+          if (myAcquiredWitness && item.title.includes(myAcquiredWitness)) {
+            return true;
+          }
+          // あるいは、もし他の証言も持たせたい場合はここで条件分岐できます。
+          // デフォルトで全表示させず、自分がゲットしたものだけにするなら上記の条件で絞れます。
+          return false; // デフォルトでは未入力を非表示にし、自分が獲得したものだけを通す
+        });
+
+        // ※もし「自分が獲得した証言がどれか」をシンプルに判定したい場合、
+        // 前の画面で選んだ証人の証言だけをここに表示させるのが最も直感的です。
+      } else {
+        // 確定情報、アイテム、秘密などは今まで通り自分のリストにあるものを表示
+        filteredList = myInfoList.filter(item => item.category === categoryName);
+      }
+
+      const subListContainer = document.getElementById("subSelectList");
+      subListContainer.innerHTML = "";
+
+      const titleElem = document.getElementById("subSelectModalTitle");
+      if (titleElem) {
+        titleElem.innerText = `${categoryName} の公開選択`;
+      }
+
+      if (filteredList.length === 0) {
+        subListContainer.innerHTML = `<p style="text-align:center; color:#888; margin-top:20px;">このカテゴリーで公開できる情報（所持している証言）はありません。</p>`;
+      } else {
+        filteredList.forEach(item => {
+          const btn = document.createElement("button");
+          btn.className = "sub-select-item-btn";
+          btn.innerHTML = `<span>${item.title}</span> <span style="font-size:0.9rem; color:#ffe169;">▶ コードを見る</span>`;
+          btn.onclick = () => {
+            closeModal('subSelectModal');
+            showMyPublishCode(item);
+          };
+          subListContainer.appendChild(btn);
+        });
+      }
+
+      openModal('subSelectModal');
+    }
+
+    // 自分の公開コードを表示する
+    function showMyPublishCode(item) {
+      document.getElementById("myPublishTitle").innerText = `${item.title} の公開パスワード`;
+      // パスワードを読みやすくハイフンで区切る（例: 267 → 2-6-7）
+      const formattedPw = item.password.split('').join('-');
+      document.getElementById("mySecretCodeDisplay").innerText = formattedPw;
+      openModal('myPublishModal');
+    }
+
+    // --- パスワード解除の要求（他プレイヤーの未公開情報を開くとき） ---
+    function requestUnlock(charaId, itemIndex) {
+      currentTargetItem = { charaId, itemIndex };
+      currentInputPassword = "";
+      document.getElementById("passwordInputDisplay").innerText = "---";
+      openModal('passwordModal');
+    }
+
+    function inputNum(num) {
+      if (currentInputPassword.length < 3) {
+        currentInputPassword += num;
+        document.getElementById("passwordInputDisplay").innerText = currentInputPassword;
+      }
+    }
+
+    function clearPassword() {
+      currentInputPassword = "";
+      document.getElementById("passwordInputDisplay").innerText = "---";
+    }
+
+    function submitPassword() {
+      if (!currentTargetItem) return;
+      const targetData = publicInfoStore[currentTargetItem.charaId][currentTargetItem.itemIndex];
+
+      if (currentInputPassword === targetData.password) {
+        // 認証成功時も、味気ないalertならここにカスタム通知を出せます
+        targetData.unlocked = true;
+        localStorage.setItem('gamePublicInfo', JSON.stringify(publicInfoStore));
+
+        closeModal('passwordModal');
+        renderPublicList(currentTargetItem.charaId);
+        
+        // 成功メッセージ（必要なら）
+        showCustomAlert("認証成功", "暗証番号が一致しました。\n情報が公開されました。");
+      } else {
+        // ★パスワード間違いのとき、標準alertの代わりにゲーム内ポップアップを出す！
+        clearPassword();
+        showCustomAlert("認証失敗", "パスワードが違います。\n正しい3桁のコードを入力してください。");
+      }
+    }
+
+    // ★ゲーム内のおしゃれな通知を表示する専用関数
+    function showCustomAlert(title, text) {
+      document.getElementById("customAlertTitle").innerText = title;
+      document.getElementById("customAlertText").innerText = text;
+      openModal('customAlertModal');
+    }
+
+    // --- 自分の手帳（HO）を開く ---
+    function openHandbook() {
+      const myId = localStorage.getItem('selectedChara') || "hinagiku";
+      const myChar = characters.find(c => c.id === myId);
+      const myInfoList = publicInfoStore[myId] || [];
+      
+      let hoText = `【キャラクター：${myChar.name}】\n\n【所持している情報・コード一覧（自分用メモ）】\n`;
+      myInfoList.forEach(item => {
+        hoText += `・[${item.category}] ${item.title} → 暗証番号: 【 ${item.password} 】\n`;
+      });
+
+      document.getElementById("handbookTitle").innerText = `${myChar.name} の手帳 (HO・暗証番号控え)`;
+      document.getElementById("handbookBody").innerText = hoText;
+      openModal('handbookModal');
+    }
+
+    function updateTimerDisplay() {
+      const min = Math.floor(remainingSeconds / 60).toString().padStart(2, '0');
+      const sec = (remainingSeconds % 60).toString().padStart(2, '0');
+      document.getElementById("timerDisplay").innerHTML = `${min}:${sec} <span class="hourglass-icon">⏳</span>`;
+    }
+
+    // --- モーダル制御 ---
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.add("active");
+    }
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove("active");
+    }
+
+    // フルスクリーン切り替え
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          alert(`フルスクリーン表示エラー: ${err.message}`);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // --- 証人尋問へ進むボタンを押したとき ---
+    function goNextPhase() {
+      openModal('confirmModal'); // 他のモーダルと同じ共通の開く仕組みを使う
+    }
+
+    // --- 「いいえ」を押したとき ---
+    function closeConfirmModal() {
+      closeModal('confirmModal'); // 共通の閉じる仕組みを使う
+    }
+
+    // --- 「はい」を押したとき ---
+    function executeNextPhase() {
+      location.href = "suiri_rule.html";
+    }
+
+  </script>
+
+  <script src="icon.js"></script>
+  <script src="menu.js"></script>
+</body>
+</html>

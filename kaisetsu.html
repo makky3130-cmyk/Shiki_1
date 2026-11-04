@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>解説・答え合わせ | 春夏秋冬〜追憶〜</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #ffffff;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* 16:9 ゲーム画面フレーム（星空背景） */
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background-image: url('background/sora.png'); /* 適宜星空の画像パスに変更してください */
+      background-color: #0b0b14;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 40px 60px;
+    }
+
+    /* 上部タイトルバナー */
+    .top-banner {
+      background: linear-gradient(135deg, #182245, #2b3b70);
+      border: 2px solid #5a78d0;
+      padding: 10px 50px;
+      font-size: 1.8rem;
+      letter-spacing: 0.15em;
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+      clip-path: polygon(5% 0, 95% 0, 100% 50%, 95% 100%, 5% 100%, 0 50%);
+    }
+
+    /* ボタン配置グリッド（3列×2行） */
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px 50px;
+      width: 100%;
+      max-width: 900px;
+      margin: auto 0;
+    }
+
+    /* 八角形風ボタンのデザイン */
+    .oct-btn {
+      background: rgba(10, 10, 20, 0.75);
+      border: 2px solid #ffffff;
+      color: #ffffff;
+      font-size: 1.4rem;
+      font-family: 'Sawarabi Mincho', serif;
+      letter-spacing: 0.1em;
+      padding: 22px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      clip-path: polygon(15% 0, 85% 0, 100% 25%, 100% 75%, 85% 100%, 15% 100%, 0 75%, 0 25%);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+
+    .oct-btn:hover {
+      background: rgba(90, 120, 208, 0.4);
+      border-color: #ffe169;
+      color: #ffe169;
+      transform: scale(1.05);
+    }
+
+    /* 最下部のアクションボタン行 */
+    .bottom-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+
+    .bottom-btn {
+      background: rgba(10, 10, 20, 0.85);
+      border: 2px solid #ffffff;
+      color: #ffffff;
+      font-size: 1.2rem;
+      font-family: 'Sawarabi Mincho', serif;
+      padding: 10px 40px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .bottom-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: #ffe169;
+      color: #ffe169;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen">
+    
+    <!-- 上部タイトル -->
+    <div class="top-banner">解説・答え合わせ</div>
+
+    <!-- 6つのメインメニューボタン -->
+    <div class="menu-grid">
+      <button class="oct-btn" onclick="openCategory('character')">キャラクターシート</button>
+      <button class="oct-btn" onclick="openCategory('ho')">HO</button>
+      <button class="oct-btn" onclick="openCategory('goal')">目標</button>
+      <button class="oct-btn" onclick="openCategory('item')">アイテム</button>
+      <button class="oct-btn" onclick="openCategory('secret')">秘密</button>
+      <button class="oct-btn" onclick="openCategory('endstory')">エンドストーリー</button>
+    </div>
+
+    <!-- 下部ボタン -->
+    <div class="bottom-bar">
+      <button class="bottom-btn" onclick="location.href='end.html'">戻る</button>
+      <button class="bottom-btn" onclick="location.href='title.html'">タイトルへ</button>
+    </div>
+
+  </div>
+
+  <script>
+    function openCategory(category) {
+      localStorage.setItem('explanationCategory', category);
+
+      if (category === 'endstory') {
+        // エンドストーリーだけは従来通りキャラ選択画面へ
+        location.href = 'explanation_select.html';
+      } 
+      else if (category === 'character') {
+        // キャラクターシート専用の画面へ
+        location.href = 'explanation_character.html';
+      } 
+      else if (category === 'ho') {
+        // HO専用の画面へ（今後作る場合）
+        location.href = 'explanation_ho.html';
+      } 
+      else if (category === 'goal') {
+        // 目標専用の画面へ（今後作る場合）
+        location.href = 'explanation_goal.html';
+      } 
+      else if (category === 'item') {
+        // アイテム専用の画面へ（今後作る場合）
+        location.href = 'explanation_item.html';
+      } 
+      else if (category === 'secret') {
+        // 秘密専用の画面へ（今後作る場合）
+        location.href = 'explanation_secret.html';
+      }
+    }
+
+  </script>
+</body>
+</html>

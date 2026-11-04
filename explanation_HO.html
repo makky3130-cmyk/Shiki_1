@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>キャラクターシート | 解説・答え合わせ</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #ffffff;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* 16:9 ゲーム画面フレーム */
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background-image: url('background/sora.png');
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 30px 45px;
+    }
+
+    /* 1. 左側：縦に並ぶキャラクターアイコンリスト */
+    .thumb-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .thumb-card {
+      width: 75px;
+      aspect-ratio: 1 / 1;
+      background: rgba(10, 10, 20, 0.8);
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-radius: 2px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .thumb-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+    }
+
+    .thumb-card:hover {
+      border-color: #ffe169;
+      transform: scale(1.05);
+    }
+
+    /* 選択中のアイコン（赤い枠線） */
+    .thumb-card.selected {
+      border-color: #ff3333;
+      box-shadow: 0 0 10px rgba(255, 51, 51, 0.8);
+    }
+
+    /* 2. 中央：立ち絵表示エリア */
+    .standee-area {
+      position: absolute;
+      left: 140px;
+      bottom: 0;
+      height: 90%;
+      display: flex;
+      align-items: flex-end;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .standee-img {
+      max-height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
+    }
+
+    /* 3. 右側：テキストエリアと名前タグのコンテナ */
+    .right-container {
+      width: 58%;
+      height: 85%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* 上部の八角形風名前タグ */
+    .name-tag {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 10, 20, 0.9);
+      border: 2px solid #ffffff;
+      color: #ffffff;
+      font-size: 1.2rem;
+      letter-spacing: 0.15em;
+      padding: 8px 60px;
+      text-align: center;
+      clip-path: polygon(10% 0, 90% 0, 100% 30%, 100% 100%, 0 100%, 0 30%);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+      z-index: 12;
+    }
+
+    /* 右側の半透明テキストボックス */
+    .text-box {
+      width: 100%;
+      height: 78%;
+      background: rgba(15, 15, 25, 0.85);
+      backdrop-filter: blur(6px);
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      border-radius: 16px;
+      padding: 40px 45px;
+      box-sizing: border-box;
+      overflow-y: auto;
+      font-size: 1.15rem;
+      line-height: 1.9;
+      white-space: pre-wrap;
+      color: #ffffff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+    }
+
+    .text-box::-webkit-scrollbar {
+      width: 8px;
+    }
+    .text-box::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 4px;
+    }
+
+    /* 4. 右下の「戻る」ボタン */
+    .bottom-back-area {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      z-index: 15;
+    }
+
+    .back-btn {
+      background: rgba(10, 10, 20, 0.9);
+      border: 2px solid #ffffff;
+      color: #ffffff;
+      font-size: 1.3rem;
+      font-family: 'Sawarabi Mincho', serif;
+      padding: 10px 50px;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      transition: all 0.2s ease;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: #ffe169;
+      color: #ffe169;
+    }
+
+    /* 右上メニューボタン */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+
+  </style>
+</head>
+<body>
+
+  <div class="game-screen" id="gameScreen">
+    
+    <!-- 左側：縦並びのキャラクターアイコンリスト -->
+    <div class="thumb-list" id="thumbList">
+      <!-- JavaScriptで動的に生成されます -->
+    </div>
+
+    <!-- 中央：立ち絵エリア -->
+    <div class="standee-area">
+      <img id="standeeImg" class="standee-img" src="" alt="">
+    </div>
+
+    <!-- 右側：名前タグ ＆ テキストボックス ＆ 戻るボタン -->
+    <div class="right-container">
+      <div class="name-tag" id="nameTag">ヒナギク</div>
+      <div class="text-box" id="textBox">
+        テキストを読み込み中……
+      </div>
+    </div>
+
+    <!-- 右下の戻るボタン -->
+    <div class="bottom-back-area">
+      <button class="back-btn" onclick="location.href='kaisetsu.html'">戻る</button>
+    </div>
+
+  </div>
+
+  <script src="explanation_data.js"></script>
+  <script>
+    // キャラクターの定義データ（立ち絵画像、サムネイル画像、名前、および個別の背景スチル指定も可能！）
+    const characters = [
+      { id: 'hinagiku', name: 'ヒナギク', thumb: 'chara/icon_hinagiku.png', standee: 'chara/hinagiku_normal.png', bg: '' },
+      { id: 'himawari', name: 'ヒマワリ', thumb: 'chara/icon_himawari.png', standee: 'chara/himawari_normal.png', bg: '' },
+      { id: 'daria', name: 'ダリア', thumb: 'chara/icon_daria.png', standee: 'chara/daria_normal.png', bg: '' },
+      { id: 'hiragi', name: 'ヒイラギ', thumb: 'chara/icon_hiragi.png', standee: 'chara/hiragi_normal.png', bg: '' },
+      { id: 'yuta', name: 'ユウタ', thumb: 'chara/icon_yuta.png', standee: 'chara/yuta.png', bg: '' }
+    ];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderThumbnails();
+      
+      // 最初はヒナギク（または前回選んだキャラ）を表示
+      let defaultId = localStorage.getItem('selectedExplanationChara') || 'hinagiku';
+      selectCharacter(defaultId);
+    });
+
+    // 左側のサムネイル一覧を生成する
+    function renderThumbnails() {
+      const listContainer = document.getElementById('thumbList');
+      listContainer.innerHTML = "";
+
+      characters.forEach(chara => {
+        const card = document.createElement('div');
+        card.className = 'thumb-card';
+        card.id = `thumb-${chara.id}`;
+        card.innerHTML = `<img src="${chara.thumb}" alt="${chara.name}">`;
+        card.onclick = () => selectCharacter(chara.id);
+        listContainer.appendChild(card);
+      });
+    }
+
+    // キャラクターを選択したときの切り替え処理
+    function selectCharacter(charaId) {
+      // 選択状態の枠（赤枠）を更新
+      document.querySelectorAll('.thumb-card').forEach(card => card.classList.remove('selected'));
+      const activeCard = document.getElementById(`thumb-${charaId}`);
+      if (activeCard) activeCard.classList.add('selected');
+
+      // 該当データの取得
+      const chara = characters.find(c => c.id === charaId);
+      if (!chara) return;
+
+      // 名前タグの更新
+      document.getElementById('nameTag').innerText = chara.name;
+
+      // 立ち絵画像の更新
+      document.getElementById('standeeImg').src = chara.standee;
+
+      // テキストボックスの更新（explanation_data.js から 'character' データを取得）
+      if (typeof explanationData !== 'undefined' && explanationData[charaId] && explanationData[charaId]['ho']) {
+        document.getElementById('textBox').innerText = explanationData[charaId]['ho'];
+      } else {
+        document.getElementById('textBox').innerText = "データが見つかりません。";
+      }
+
+      // 背景の切り替え（もしキャラごとに専用背景 'chara.bg' が設定されていればそれを使い、なければデフォルトの星空に戻す）
+      const screen = document.getElementById('gameScreen');
+      if (chara.bg) {
+        screen.style.backgroundImage = `url('${chara.bg}')`;
+      } else {
+        screen.style.backgroundImage = `url('background/sora.png')`; // デフォルトの星空
+      }
+
+      // 選択したキャラを保持
+      localStorage.setItem('selectedExplanationChara', charaId);
+    }
+  </script>
+  
+  <script src="menu.js"></script>
+  
+</body>
+</html>

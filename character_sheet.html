@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>キャラクターシート</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sawarabi+Mincho&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #000000;
+      color: #ffffff;
+      font-family: 'Sawarabi Mincho', serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* 1. ゲーム画面全体のフレーム（16:9比率） */
+    .game-screen {
+      width: min(96vw, 170vh);
+      aspect-ratio: 16 / 9;
+      max-height: 96vh;
+      background: url('background/great_houl.png') center/cover no-repeat #050508;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      padding: 25px 35px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 暗めのオーバーレイ */
+    .game-screen::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 1;
+    }
+
+    /* 全要素を前面に配置 */
+    .layer-front {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* --- 2. ヘッダーエリア --- */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      margin-bottom: 10px;
+    }
+
+    /* 左上：固定バッジ */
+    .top-badge {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      color: #ffffff;
+      padding: 6px 20px;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+      border-left: 3px solid #5a78d0;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+
+    /* 中央：キャラ名タイトルリボン */
+    .title-ribbon {
+      padding: 8px 45px;
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #ffffff;
+      letter-spacing: 0.12em;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
+      clip-path: polygon(8% 0, 92% 0, 100% 50%, 92% 100%, 8% 100%, 0 50%);
+      transition: all 0.4s ease;
+      text-align: center;
+      margin: 0 auto;
+    }
+
+    /* 右上メニューボタン */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+
+    /* --- 4. メインレイアウト（立ち絵 ＋ HO文章） --- */
+    .content-body {
+      flex: 1;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    /* 左側：キャラ立ち絵表示枠 */
+    .chara-standing-wrapper {
+      width: 28%;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      position: relative;
+    }
+    .chara-standing-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 5px 15px rgba(0,0,0,0.7));
+    }
+
+    /* 右側：HO文章カード */
+    .ho-card {
+      flex: 1;
+      height: 100%;
+      border-radius: 16px;
+      padding: 25px 30px;
+      box-sizing: border-box;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
+      transition: all 0.4s ease;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 文章スクロールエリア */
+    .ho-text-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 12px;
+      font-size: 1.05rem;
+      line-height: 2;
+      letter-spacing: 0.05em;
+      color: #f0f0f0;
+      white-space: pre-wrap;
+      text-align: left; /* ←★ここを追加（文字を左揃えにする） */
+    }
+    /* スクロールバー装飾 */
+    .ho-text-scroll::-webkit-scrollbar { width: 6px; }
+    .ho-text-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+    .ho-text-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.4); border-radius: 3px; }
+
+    /* --- 5. 下部操作バー --- */
+    .bottom-controls {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 25px;
+      height: 45px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      color: #e0e0e0;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #ffffff;
+    }
+
+    .next-btn {
+      background: rgba(0, 0, 0, 0.7);
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      padding: 8px 35px;
+      font-size: 1.15rem;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 0.15em;
+      transition: all 0.3s ease;
+    }
+    .next-btn:hover:not(:disabled) {
+      background: #ffffff;
+      color: #000000;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+    }
+    .next-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      border-color: #888;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen">
+    <div class="layer-front">
+      
+      <!-- ヘッダーエリア -->
+      <div class="header-bar">
+        <div class="top-badge">6. キャラクターシート</div>
+        <div class="title-ribbon" id="titleRibbon">---のキャラクターシート</div>
+      </div>
+
+      <!-- メインコンテンツ -->
+      <div class="content-body">
+        <!-- キャラ立ち絵 -->
+        <div class="chara-standing-wrapper">
+          <img src="" id="charaImg" class="chara-standing-img" alt="キャラ全身">
+        </div>
+
+        <!-- HOテキストボックス -->
+        <div class="ho-card" id="hoCard">
+          <div class="ho-text-scroll" id="hoContent">読み込み中...</div>
+        </div>
+      </div>
+
+      <!-- 下部操作エリア -->
+      <div class="bottom-controls">
+        <label class="checkbox-label">
+          <input type="checkbox" id="readCheck" onchange="toggleNextBtn()">
+          キャラクターシートの内容を読み込みました。
+        </label>
+        <button class="next-btn" id="nextBtn" disabled onclick="goNext()">次へ進む</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // キャラクターごとのデータ設定
+    const sheetDataStore = {
+      hinagiku: {
+        name: "ヒナギク",
+        themeColor: {
+          ribbon: "linear-gradient(135deg, #a8586c, #6e3241)",
+          cardBg: "rgba(70, 30, 42, 0.8)",
+          cardBorder: "rgba(220, 150, 170, 0.5)"
+        },
+        img: "chara/hinagiku_normal.png",
+        content: `「お母様、私は生まれてきちゃダメだったのかな？」
+これはあの人の記憶。暗く狭い部屋の中で、彼女は独りで泣いていた。誰にも愛されず、たった一人で、寒さに震えながら。
+
+　私が春の代行者として覚醒したのは、雪が降り積もり、寒さが肌に刺さる冬の日だった。唐突に頭に鳴り響く声、肩に走る激痛。その痛みに耐えられず、私はその場にうずくまる。
+「痛い。痛い。痛い痛い痛い。痛い！」
+私の叫びを声の主は無視したまま、私の名前を何度も呼ぶ。
+？？「ヒナギク。ヒナギク。ヒナギク。ヒナギク。ヒナギク・・・・・・・・・・。」
+機械のように同じリズムで繰り返されるその声は、不気味なほど綺麗で頭に響き続ける。そして、私の周囲に変化が訪れる。肌に刺さる寒さはやわらぎ、草木の芽が生える。その芽はあっという間に育ち、人の丈もある高さまで育った。
+　そのまま、どれくらい経っただろうか。痛みでその場で気絶してしまった私を護衛官のサクラがゆすり起こす。その時やっと気づいた。新たな春の代行者として、私は覚醒したのだと。
+
+　覚醒して数時間、私の中に不自然な記憶が存在することに気付く。私の知らない女の子の記憶。黒く美しい長髪を流し、赤椿のようなきれいな紅の双眸が際立つ、異常に整った顔立ちの女の子。彼女の名は、“ツバキ”。先代の春の代行者のようだ。私は断片的に、彼女の記憶を受け継いだのだと気づいたのは、サクラにこの話をした後のことだ。
+
+　彼女の記憶を占めるものは、“寂しさ”と“恐怖”だった。病弱な母のもとに生まれ父の名も顔も知らずに育った幼少期。貧しく、小さな家で母と懸命に暮らす生活は彼女にとって数少ない幸せの時間だった。しかし、その幸せは彼女が8歳になる誕生日に音を立てて崩れ落ちた。
+　いつものように畑仕事の手伝いから帰った彼女。家にはいつも通り彼女の帰りを待つ母がいると思っていた。しかし、家に帰ると母は吐血し、床に倒れこんでいた。その姿を見た彼女は助けを求めた、外を走り村中を駆け回る。大きな声で泣き叫びながら、母を助けてと、村中を走り回る。しかし、村民は彼女と目を合わせようとすらしない。泣き叫び絶望する少女、神は少女に追い打ちをかける。覚醒。母の死が迫るその最中、彼女は春の代行者として覚醒した。彼女の方から桃色の光が放たれる、そして彼女は頭を抑えその場で苦しみだす。そして彼女の周りには草木が育つ。痛みに耐えきれず彼女はそのまま気絶してしまった。
+　
+彼女が目を覚ましたのは、知らない部屋の、知らない家の中だった。途方に暮れる彼女に高価な和装を身に纏った女性が話しかける。
+？？「目を覚ましたのね。ここは春の里。あなたは代行者として覚醒したわ。」
+冷たく淡白に情報だけを並べたその言葉に彼女への配慮は存在しなかった。周りに控える次女のような者たちは彼女に軽蔑の目を向ける。ひそひそと小声で「呪われている。」と。そんな周囲に目も暮れず、彼女は尋ねる。母はどうなったのかと。声の主は先ほどと変わらぬ声色で情報だけを並べる。
+？？「死んだわ。あなたは今日からここで暮らしてもらいます。」
+8歳の少女に突き付けられたあまりにも残酷な真実。彼女はその場を飛び出し、全力で走った。母が待つはずの、あの家に。
+　家に着き勢いよく扉を開ける。彼女を待っていたのは何もない、暗く狭い部屋。膝から崩れ落ちた彼女は、呟く。涙を流し、床を濡らしながら。
+ツバキ「お母様、私は生まれてきちゃダメだったのかな？さっき聞こえたの。私のお父様、春の代行者様だったんでしょ？私は望まぬ子だったんでしょ？私が覚醒したのはお父様が死んだからなんでしょ？私は呪われた子なんでしょ？」
+彼女は独り、暗く狭い部屋で泣き叫ぶ。不義の子（※愛人との子供）としてこの世に生を受け、呪われていると蔑まれ、唯一のよりどころであった母を失って。`
+      },
+      himawari: {
+        name: "ヒマワリ",
+        themeColor: {
+          ribbon: "linear-gradient(135deg, #b87333, #7a4516)",
+          cardBg: "rgba(75, 45, 18, 0.8)",
+          cardBorder: "rgba(230, 160, 90, 0.5)"
+        },
+        img: "chara/himawari_normal.png",
+        content: `「ツバキちゃん絶対幸せになってね。私はいつでもツバキちゃんの味方だからね！」
+それが私と親友の最後の言葉になるなんて。あの時の私は夢にも思わなかった。
+
+情熱の夏、爛々たる夏。世間での夏の印象は明るく、夏の代行者は比較的世間から人気がある。メディアへの露出も最も多く祭事に招かれることも多い。幼いころからそうやって育てられてきた私はいつからか、人の前で笑顔以外の顔を吸うことが出来なくなっていた。
+いつも部屋に戻ると一人で泣き崩れる。こんな生活はもう嫌だ、と。同い年の女の子はみんな学校に通い、友達とカフェに行き、休みの日には旅行にでかけ、男の子と恋に落ちる。私もそんな人並みの生活がしてみたかった。世界で私だけが孤独なのだと感じていた。
+あの日も暖かく、星がきれいに見える夜だった。私は屋敷を抜け出しこっそりと丘の上に星を見に行った。いつも人気のないその丘に、その日に限って女の子が座っていた。私は星を見るのをあきらめ、帰路に着こうとしていた。そんな私に後ろから声をかけてくれた。
+？？「帰っちゃうの？一緒に見ようよ。」
+浮世離れした綺麗な黒髪と、鈴の音のような美しい声に私は思わず振り返ってしまった。
+？？「初めまして。私は春の代行者 ツバキです。あなたは夏の代行者様でしょ？」
+ヒマワリ「春の、代行者様。は、初めまして、ヒマワリです。」
+ツバキ「ヒマワリちゃん。かわいいお名前！私とおそろいのお花の名前だね。」
+そう言ってほほ笑む彼女のあの顔を私は一生忘れないだろう。初めて、純粋でまっすぐな笑顔を向けられた私はまるで恋に落ちるように、その顔から目を離すことが出来なかった。
+ツバキ「私ね、夏ってすごく好きなの。みんなが幸せそうな顔をしているでしょ？でも、ヒマワリちゃんはすごくつらそうに見えたから。休んで欲しいなって思ってたの。」
+ヒマワリ「え？私は別に。夏を届けるのが私の務めだもの。誇りに思ってるわ。」
+ツバキ「今は無理しなくていいんだよ。私もね春を届けるのは好きなの。でも、代行者なのはちっとも嬉しくないの。だって神様が勝手に選んで押し付けただけでしょ？それまでの私たちは普通の女の子だったはずなのに。」
+ヒマワリ「そ、それは。」
+ツバキ「ヒマワリちゃん。泣いてもいいの。私の前では笑わなくてもいいんだよ？」
+その時自分の視界が滲んでいることにやっと気づいた無意識にせき止めていた涙が溢れ出す。私は顔をぐちゃぐちゃにして大粒の涙を地面に落とす。そんな私に勢いよく抱き着くツバキちゃん。私の頭をなでて静かにただじっと私を包んでくれた。
+
+　私が泣き止んだ頃には空の端が白み始めていた。そして、丘の下からものすごい勢いで走ってくる黒い影が見える。
+？？？「ツバキ様！やっと見つけましたよ。また勝手に抜け出して。」
+ツバキ「サクラ⁉どうしてここがわかったの⁉」
+サクラ「どうしてもこうしても、一晩中走り回ったに決まってるでしょう。さぁ帰りますよ。」
+ツバキ「うぅ。ごめんなさい。あ、ヒマワリちゃんまたね！お手紙出すからねー。」
+私が返事をする間もなく春の護衛官サクラがツバキちゃんを連れてその場を去ってしまった。一睡もしていないはずなのにいつもよりすっきりしている。私はゆっくりと屋敷へと帰るのだった。`
+      },
+      daria: {
+        name: "ダリア",
+        themeColor: {
+          ribbon: "linear-gradient(135deg, #6b2838, #3f101c)",
+          cardBg: "rgba(50, 18, 26, 0.8)",
+          cardBorder: "rgba(180, 80, 100, 0.5)"
+        },
+        img: "chara/daria_normal.png",
+        content: `「私はあなたの呼ぶ秋、すごく好きですよ。」
+そう言った彼女の一点の曇りもない眼差しに、灰色だった僕の世界は、色づき始めた。
+
+　僕は万物の生と死を司る“秋”の代行者。天より与えられた神通力は“等価交換により生と死を操る”。死して間もない生命すら繋ぎ止めることができる奇跡の御業（みわざ）。しかしその代償として、周囲の草木や生き物の命を瞬時に吸い上げ、一瞬で枯れ果てさせる。死者を蘇らせてほしい狂信者どもは、揉み手をしながら僕に取り入ろうとし、おべっかを並べ立てる。一方で、足元の森を一瞬で死に追いやる恐ろしい姿を見た者たちは、僕を「死神」と呼んで忌み嫌い、遠ざけた。誰一人として僕という一人の人間を見てはくれない。僕の世界は、人間の醜いエゴと恐怖に満ちた、暗く冷たい灰色の世界だった。別にそれでよかった。独りでいることは当たり前だったから。でもあの日、彼女に出会った時、それは間違いだったのだと気づいた。
+
+　12年前のあの日、寒さが肌に突き刺さる、冬の日だった。春の顕現の儀式で近くにいた春の代行者“ツバキ”は突然の暴風雪により、急遽僕の屋敷を訪れた。黒の長髪と紅の双眸が特徴的なまだ幼さの残る少女だった。僕は滞在を許可し、適当に夕食をふるまうことにした。
+夕食の際、彼女はたくさん話しかけてきた。いつものことなのか、春の護衛官サクラは、特段気にした様子もない。退屈していた僕は興味本位で彼女の話に付き合うことにした。すると、僕が心を開いたと思ったのか、彼女は満面の笑みを浮かべる。
+ツバキ「私、ずっとダリア様にお会いしてみたかったんです。」
+どうせこいつも僕の能力を利用したいのだろう。僕は心の中でまたかとつぶやく。しかし、
+ツバキ「秋ってとても美しい季節ですよね。もちろん四季は全て好きですけど、特段秋の美しさは別格だなと思うのです。」
+彼女はただ真っすぐこちらを見て言う。
+ダリア「でも、僕の能力は怖いんですよ？そんな奴の呼ぶ秋なんてどうでもいいでしょ？」
+僕はつい悪態をつく。しまったと思ったが、彼女は少し驚いた顔をしただけだった。それどころか、
+ツバキ「私はあなたの呼ぶ秋、すごく好きですよ。だって綺麗で、でも儚くて。私は生命を誕生させるだけの能力です。でも、始まりあるものいつか終わる。だからこの世は美しいんだと思います。だから、人を大切だと思えるんだと思います。あなたの呼ぶ秋は、“それ”を“世界の美しさと儚さ”を思い出させてくれる。すごいと思います！そんな季節を呼ぶあなたはきっと暖かくて素敵な人なんだろうなって。」
+その瞬間、僕の灰色だった世界は大きな脈を打ち始める。まるで初めてこの世界に生まれ落ちたように。世界が、色づき始めた。その時に気づいたんだ。僕はどうやら恋に落ちたようだと。
+ツバキ「はっ、すみません。生意気なことを申しました。」
+唖然とする僕を見て、彼女は謝罪の言葉を口にする。どこまでもお人好しなようだ。
+ダリア「気にしないでください。ちょっと驚いただけです。」
+
+　それから、僕の日常は一変した。彼女に会いたい、彼女と話がしたい。僕は自分の中のこの感情を止める術を知らなかった。それから彼女とは定期的に文通でやり取りをする。代行者どうしの恋は固く禁じられているが、そんなもの僕の知ることではない。その手紙の中でツバキの置かれている現状を知った。自分は不義の子（愛人との子）であり、先代が自分の父であること。それから、呪われた子と呼ばれ、周囲から忌み嫌われていることも。そんな状況でもなお懸命にあろうとする彼女を知り、僕の中にある考えが芽生える。
+「ツバキを救いたい。この理不尽な世界から、僕が彼女を救い出す。」
+その男としての歪んだ執着と、焦燥に駆られていた僕の前に現れたのが、テロ組織の長「タケル」だった。タケルは巧みな言葉で僕に語りかける。
+『四季庁の支配からツバキ様を解放したい。力を貸してくれれば、彼女を自由にしてお前に引き渡す』と。
+ツバキを救いたい、僕だけのものにしたい。僕は、タケルの言葉に絆されてしまった。僕はタケルに、四季庁の防衛の死角やツバキのスケジュールといった決定的な情報を渡してしまったのだ。
+あの日、ツバキは姿を消した。タケルは最初から僕を利用しただけだったのだ。「僕のせいでツバキが奪われた」という強烈な罪悪感と後悔に苛まれながらも、僕はこの10年間、ずっと自分に言い聞かせてきた。
+『大丈夫。まだ新たな春の代行者は覚醒していない。ツバキは生きている。』と。
+
+　だが——すべては遅すぎたのだ。狂おしいほどの後悔と、取り返しのつかない罪の重さを隠し、俺は今、審問の場に立っている。`
+      },
+      hiragi: {
+        name: "ヒイラギ",
+        themeColor: {
+          ribbon: "linear-gradient(135deg, #5c626b, #333840)",
+          cardBg: "rgba(40, 44, 52, 0.8)",
+          cardBorder: "rgba(160, 170, 185, 0.5)"
+        },
+        img: "chara/hiragi_normal.png",
+        content: `「助けに来たぞ。もう大丈夫だ。」
+それはあの時、俺が言いたかった言葉。もう二度と伝えることのできない言葉。
+
+　季節の祖たる冬には、厳寒の季節を恨む過激派のテロ組織による襲撃が絶えない。ゆえに厳しく、強く育てられてきた。天より神通力を与えられた、まだ幼いあの時から。
+もう、20年も前の話だ。７つになった頃、突如頭に声が響いた。
+？？「ヒイラギ、ヒイラギ、ヒイラギ、ヒイラギ」
+その直後、頭と肩に激痛が走る。到底、齢7の子供に耐えられるようなレベルの痛みではなかった。俺はその場にうずくまり、激痛にもがく。俺の肩は青白い光を放ち、周囲の空気が凍り付いた。
+ヒイラギ「痛い。痛い。痛い。痛い痛い痛い。痛い！」
+俺はそのまま痛みに耐えきれず気絶した。後になって知ったが、これがいわゆる「覚醒」と呼ばれる天の神々により新たな代行者が選ばれ、ただの人の子を現人神へとするために神通力を与える過程で生じる現象だそうだ。
+
+　その後、周囲の俺に対する態度は恐ろしいほど急激に変わった。今まで友達として遊んでいた近所の少年も、教師も、周りの大人たちも、全員等しく俺に頭を下げる。俺の周囲から同族は消え、俺は“独り”になった。
+そんな俺のもとに『護衛官』が派遣された。『瀬戸　澪』と名乗ったその女性は30代とは到底思えないほど美しく、短い銀髪を流す女性だった。ミオだけは俺を息子のように扱った。だから、寂しさに押しつぶされるようなことはなかった。
+　
+　それから１年の月日が経ち、春の代行者が代替わりしたという報せを耳にした。古くからの習わしで、新たな代行者は全員、季節の祖である『冬の里』で１年間『神降ろし』と呼ばれる修行を行う。四季会議に出たこともない俺にとっては、初めて出会う同族。同じ孤独な存在。俺の興味は自然とその存在へと向けられた。
+神降ろし初日の朝。珍しく雪の降らない晴れた空だったのを今でも覚えている。
+里長「春の代行者ヒナギク様、護衛官サクラ様のおなーりー。」
+そして、ついに扉が開き俺は出会った。美しく整えられた長い黒の髪を流し、赤椿のような紅の双眸を覗かせる、まだあどけなさの残る幼い少女だった。その雰囲気はどここか儚げで、でも暖かくて。―――俺の、春だ。それが俺と先代春の代行者“ツバキ”との出会いだった。
+　
+　それから神降ろしの１年間を共に過ごした。ある日、
+ミオ「ツバキ様が先代の春の代行者の子？どおりで面影があると思ったわ。」
+サクラ「えぇ。先代と愛人の間に生まれたツバキ様が次の代行者となったことで、里の者共はツバキ様を『呪われた子』と呼び、理不尽な扱いをするのです。」
+ミオと春の護衛官サクラが２人で話しているのを聞いてしまった。
+ツバキ「お母、様。」
+その声に驚き振り向く。そして、ツバキの目から涙が流れる。俺は何もできずただツバキを抱きしめる。この日、俺は思った。ツバキにもう、泣いてほしくないと。
+　
+　しかし、四季の代行者同士の恋は禁忌とされてきた。例外は一切なく、これまで厳格に管理されてきている。理由なく会うことも許されず、ただ二人で手を繋ぐそんな簡単なことすら人目を盗みひっそりと行っていた。この関係を知っているのは幼いころから俺のそばにいてくれた護衛官のミオと春の護衛官サクラだけだ。世界中が否定しようとも、神々が許さなくても俺はツバキを愛している。それだけだったのだ。彼女の笑顔のためならば例えこの身を投げうってもかまわなかったのに。`
+      },
+      yuta: { // ユウタ
+        name: "ユウタ",
+        themeColor: {
+          ribbon: "linear-gradient(135deg, #4a5435, #262c19)",
+          cardBg: "rgba(35, 42, 25, 0.8)",
+          cardBorder: "rgba(140, 155, 110, 0.5)"
+        },
+        img: "chara/yuta_normal.png",
+        content: `　大きな銃声と赤く染まる視界。私は毎日同じ光景を最後に眠りから目覚める。これは罰なのだ。私が死ぬまで背負わねばならない咎なのである。
+
+  「コンコンッ」と私の自室の扉をノックする音が聞こえる。
+？？「ユウタ。すぐに執務室へ来てくれ。緊急の報告がある。」
+ユウタ「少しだけ待ってくれ。すぐに向かう。ヒジリ。」
+私は旧知の仲であるヒジリに声をかける。
+ヒジリ「すまないな。こんな早朝に。」
+ヒジリは申し訳なさそうな声で私にそう答える。
+ユウタ「大丈夫だ。先に行っていてくれ。」
+ヒジリ「あぁ。わかった。」
+　ヒジリが“緊急”というのはかなり珍しい。四季を統括する四季庁その最高指揮官である私と補佐であるヒジリは同じ権限を与えられている。つまり、ヒジリの言う緊急とは“トップが2人で話さねばならないレベルの事案”だということだ。私は急ぎ、ヒジリの待つ執務室へと向かった。
+
+　私が執務室へと入ると、ヒジリはすぐに報告を始めた。
+ヒジリ「悪いなユウタ。とにかくまずはこれを見てくれ。」
+そう言ってヒジリは私に1枚の写真を差し出した。そこに写っているものを見て、私は驚きを隠すことが出来なかった。
+　10年前に失踪し、その行方がわからなくなっていた春の代行者「ツバキ」のきれいな遺体の姿だった。私の反応が予想できていたのかヒジリはそのまま淡々と説明を続ける。
+ヒジリ「お前も知っている通り、先日“ヤツ”のアジトを捜索したときの話になる。今回の作戦はアジトにいたテロ組織の“構成員は”全員生きたまま捕縛に成功。結果だけ見れば大成功ということになる。しかし、その中に“ヤツ”はおろか最下級の下っ端以外の構成員は誰1人としていなかった。そして、地下室を探索していたところ、ほぼ瀕死のツバキ様を発見、即保護し、救命活動に移ったが残念ながらそのまま息を引き取られた。以上の報告を先ほど帰還したチーム長より受けたところだ。」
+ユウタ「そうか。確かにこれは緊急だな。やらねばならぬことは山積みになる一方だ。しかし、“また”か。私はまた、救うことが出来なかったのだな。一体私は先生から何をもらい、何のために生きているのか。自分の無能さがただただ憎い。」
+私は拳を強く握りしめた。掌に爪が食い込み、血が滴るほどに強く。
+ヒジリ「ユウタ。君があの日のことを強く後悔していることは、百も承知だ。私も未だにあの日のことは脳裏から離れないさ。夢に見るほどにね。それでもお前が救ってくれた命は“ここ”にいる。今も俺は生きているんだ。私たちは罪を背負っている。だからこそ一秒も無駄にはできない。春の里より新たな春の代行者の覚醒の連絡が入った。次こそは必ず救おう。俺たちで。」
+ヒジリの強い言葉に背中を押され私たちは全ての代行者を四季庁へと収集した。`
+      }
+    };
+
+    // 初期化
+    document.addEventListener("DOMContentLoaded", () => {
+      const selectedId = localStorage.getItem('selectedChara') || 'hinagiku';
+      const data = sheetDataStore[selectedId] || sheetDataStore['hinagiku'];
+
+      document.getElementById('titleRibbon').innerText = `${data.name}のキャラクターシート`;
+      document.getElementById('hoContent').innerText = data.content;
+
+      const ribbonElem = document.getElementById('titleRibbon');
+      const cardElem = document.getElementById('hoCard');
+
+      ribbonElem.style.background = data.themeColor.ribbon;
+      cardElem.style.background = data.themeColor.cardBg;
+      cardElem.style.borderColor = data.themeColor.cardBorder;
+
+      const imgElem = document.getElementById('charaImg');
+      imgElem.src = data.img;
+      imgElem.onerror = () => {
+        imgElem.src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400"><rect width="200" height="400" fill="%23222"/><text x="100" y="200" font-size="20" fill="%23fff" text-anchor="middle">${data.name}</text></svg>`;
+      };
+    });
+
+    // チェックボックス
+    function toggleNextBtn() {
+      const isChecked = document.getElementById('readCheck').checked;
+      document.getElementById('nextBtn').disabled = !isChecked;
+    }
+
+    // メニュー開閉
+    function toggleMenu() {
+      const sideMenu = document.getElementById('sideMenu');
+      sideMenu.classList.toggle('active');
+    }
+
+    // メニュー項目クリック時の動作
+    function menuAction(action) {
+      if (action === 'title') {
+        if (confirm("タイトル画面に戻りますか？")) {
+          location.href = "title.html";
+        }
+      } else {
+        alert(`${action} 機能は準備中です。`);
+      }
+    }
+
+    // 次へ進む
+    function goNext() {
+      location.href = "main_story.html";
+    }
+  </script>
+
+  <script src="menu.js"></script>
+</body>
+</html>

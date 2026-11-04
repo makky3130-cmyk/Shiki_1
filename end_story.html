@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>本編 | 春夏秋冬〜追憶〜</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* 1. ゲーム画面（枠からはみ出た部分を自動カット） */
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background-color: #0f0f12;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      overflow: hidden; /* ★枠外はみ出し自動カット */
+      cursor: pointer;
+    }
+
+    /* 2. 立ち絵全体の配置エリア */
+    .character-container {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 5%;
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .character-slot {
+      width: 45%;
+      height: 100%;
+      display: flex;
+      align-items: flex-start; /* ★頭基準 */
+      transition: all 0.3s ease;
+    }
+
+    .character-slot.left-slot {
+      justify-content: flex-start;
+    }
+
+    .character-slot.right-slot {
+      justify-content: flex-end;
+    }
+
+    .character-img {
+      width: 130%;
+      height: auto;
+      max-height: none;
+      max-width: none;
+      object-fit: contain;
+      transition: filter 0.3s ease, transform 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease; 
+      filter: drop-shadow(0 5px 15px rgba(0,0,0,0.8));
+      opacity: 0;
+      margin-top: 50px; 
+    }
+
+    .character-img.show {
+      opacity: 1;
+    }
+    
+    .hinagiku-img {
+      width: 110% !important;
+      margin-top: 70px !important;
+    }
+
+    .yuta-img {
+      width: 100% !important;
+      margin-top: 50px !important;
+    }
+
+    /* 🎭 発言中（アクティブ）の立ち絵 */
+    .character-slot.active .character-img {
+      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4)) brightness(1);
+      transform: scale(1.05);
+      z-index: 10;
+    }
+
+    /* 🕶 非発言（非アクティブ）の立ち絵 */
+    .character-slot.inactive .character-img {
+      filter: brightness(0.35);
+      transform: scale(0.95);
+      z-index: 5;
+    }
+
+    /* 4. メッセージボックス */
+    .message-box {
+      width: 100%;
+      min-height: 150px;
+      background: rgba(10, 10, 15, 0.92);
+      border-top: 2px solid rgba(255, 255, 255, 0.2);
+      padding: 30px 35px 20px 35px; /* 上パディングを少し広げて枠と文字の衝突を防止 */
+      box-sizing: border-box;
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    /* 🏷 話者名用ネームウィンドヨタグ（メッセージボックス左上に配置） */
+    .speaker-name {
+      position: absolute;
+      top: -24px; /* メッセージボックスの上面を跨ぐ位置へ */
+      left: 30px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #ffffff; /* デフォルト色（ナレーション・その他） */
+      background: rgba(15, 15, 22, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-bottom: none; /* メッセージボックスと一体化感を出す */
+      border-radius: 6px 6px 0 0;
+      padding: 4px 18px;
+      letter-spacing: 0.1em;
+      box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.5);
+      transition: color 0.3s ease, border-color 0.3s ease;
+    }
+
+    /* 話者がいない（ナレーションやト書きで名前が空）のときは非表示 */
+    .speaker-name:empty {
+      display: none;
+    }
+
+    /* 🎨 キャラ別名前カラー設定 */
+    .speaker-name.color-hinagiku { color: #ff9ebb; border-color: rgba(255, 158, 187, 0.5); } /* ヒナギク：ピンク */
+    .speaker-name.color-himawari { color: #ffe169; border-color: rgba(255, 225, 105, 0.5); } /* ヒマワリ：黄色 */
+    .speaker-name.color-daria    { color: #ff5252; border-color: rgba(255, 82, 82, 0.5); }   /* ダリア：赤 */
+    .speaker-name.color-hiragi   { color: #64b5f6; border-color: rgba(100, 181, 246, 0.5); } /* ヒイラギ：青 */
+    .speaker-name.color-yuta     { color: #ba68c8; border-color: rgba(186, 104, 200, 0.5); } /* ユウタ：紫 */
+
+    /* セリフ・本文（誰が喋っても常に白統一） */
+    .message-text {
+      font-size: 1.25rem;
+      line-height: 1.7;
+      color: #ffffff;
+      margin: 0;
+      white-space: pre-wrap;
+    }
+
+    /* 次へ進むインジケーター（▼マーク） */
+    .next-arrow {
+      position: absolute;
+      bottom: 15px;
+      right: 25px;
+      font-size: 1.2rem;
+      color: #e5eb72;
+      animation: bounce 1s infinite alternate;
+    }
+
+    @keyframes bounce {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(5px); }
+    }
+
+    /* 左上のヘッダーコピペ用 */
+    .header-bar {
+      position: absolute;
+      top: 10px;
+      left: 0px;
+      right: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      z-index: 10;
+    }
+
+    /* 左上：固定バッジ */
+    .top-badge {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      color: #ffffff;
+      padding: 6px 20px;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+      border-left: 3px solid #5a78d0;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+    
+    /* 右上メニューボタンの位置調整 */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .side-menu {
+      position: fixed; top: 0; right: -300px;
+      width: 250px; height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002; transition: right 0.3s ease;
+      padding: 40px 20px; box-sizing: border-box; text-align: left;
+    }
+    .side-menu.active { right: 0; }
+    .side-menu h2 { color: #ffffff; font-size: 1.5rem; border-bottom: 1px solid #c93b3b; padding-bottom: 10px; margin-top: 0; }
+    .side-menu ul { list-style: none; padding: 0; margin: 30px 0; }
+    .side-menu li { margin-bottom: 20px; }
+    .side-menu a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; display: block; }
+    .side-menu a:hover { color: #e5eb72; }
+    .side-menu .close-btn { width: 100%; margin-top: 20px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: #fff; padding: 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen" id="gameScreen" onclick="nextScenario()">
+    
+    <div class="header-bar">
+      <div class="top-badge">16. エンドストーリー</div>
+    </div>
+
+    <!-- 左右のキャラクター表示エリア -->
+    <div class="character-container">
+      <div class="character-slot left-slot" id="leftSlot">
+        <img id="leftCharaImg" class="character-img" src="" alt="">
+      </div>
+      <div class="character-slot right-slot" id="rightSlot">
+        <img id="rightCharaImg" class="character-img" src="" alt="">
+      </div>
+    </div>
+
+    <!-- メッセージボックス -->
+    <div class="message-box">
+      <div class="speaker-name" id="speakerName"></div>
+      <p class="message-text" id="messageText"></p>
+      <div class="next-arrow">▼</div>
+    </div>
+  </div>
+
+  <script>
+    let scenarioData = [];
+    let currentStep = 0;
+
+    // 起動時に localStorage からエンドストーリーのID（例: "hinagiku" など）を読み込み、対応する外部JSを読み込む
+    window.addEventListener('DOMContentLoaded', () => {
+      const endId = localStorage.getItem('endId') || "hinagiku"; // デフォルト
+      const script = document.createElement('script');
+      script.src = `${endId}_story.js`;
+
+      script.onload = () => {
+        if (typeof getStoryData === "function") {
+          scenarioData = getStoryData();
+          currentStep = 0;
+          renderStep();
+        } else {
+          document.getElementById('messageText').innerText = "エラー: getStoryData() が定義されていません。";
+        }
+      };
+
+      script.onerror = () => {
+        document.getElementById('messageText').innerText = `エラー: ${endId}_story.js の読み込みに失敗しました。`;
+      };
+
+      document.body.appendChild(script);
+    });
+
+    // --- 以下、元の renderStep や updateCharaSlot などの関数はそのまま残す ---
+
+    function renderStep() {
+      const data = scenarioData[currentStep];
+
+      // 背景画像変更
+      if (data.bg) {
+        document.getElementById('gameScreen').style.backgroundImage = `url('${data.bg}')`;
+      }
+
+      // 話者名とクラス付与（カラーの自動適用）
+      const speakerElem = document.getElementById('speakerName');
+      const speakerName = data.speaker || '';
+      speakerElem.innerText = speakerName;
+
+      // 既存の色クラスを一旦リセット
+      speakerElem.className = 'speaker-name';
+
+      // キャラ名判定で色クラスを付与
+      if (speakerName.includes('ヒナギク')) {
+        speakerElem.classList.add('color-hinagiku');
+      } else if (speakerName.includes('ヒマワリ')) {
+        speakerElem.classList.add('color-himawari');
+      } else if (speakerName.includes('ダリア')) {
+        speakerElem.classList.add('color-daria');
+      } else if (speakerName.includes('ヒイラギ')) {
+        speakerElem.classList.add('color-hiragi');
+      } else if (speakerName.includes('ユウタ')) {
+        speakerElem.classList.add('color-yuta');
+      }
+
+      // セリフ本文（テキスト）
+      document.getElementById('messageText').innerText = data.text || '';
+
+      // --- 立ち絵の更新とアクティブ制御 ---
+      updateCharaSlot('leftSlot', 'leftCharaImg', data.leftChara, data.activePosition === 'left', data.activePosition !== '');
+      updateCharaSlot('rightSlot', 'rightCharaImg', data.rightChara, data.activePosition === 'right', data.activePosition !== '');
+
+      // --- ▼ ボイス再生＆BGM音量連動処理の追加 ---
+      if (data.voice) {
+        let voiceAudio = document.getElementById('lineVoice');
+        if (!voiceAudio) {
+          voiceAudio = document.createElement('audio');
+          voiceAudio.id = 'lineVoice';
+          document.body.appendChild(voiceAudio);
+        }
+        voiceAudio.src = data.voice;
+        voiceAudio.currentTime = 0;
+
+        const bgm = document.getElementById('commonBgm');
+        if (bgm) bgm.volume = 0.2; // ボイス中BGMを小さくする
+
+        voiceAudio.play().catch(err => {
+          console.log("ボイスの自動再生待ち", err);
+        });
+
+        voiceAudio.onended = () => {
+          if (bgm) bgm.volume = 0.5; // 再生終了後BGMを元に戻す
+        };
+      }
+    }
+
+    function updateCharaSlot(slotId, imgId, imageSrc, isActive, hasActiveSpeaker) {
+      const slot = document.getElementById(slotId);
+      const img = document.getElementById(imgId);
+
+      if (imageSrc) {
+        img.src = imageSrc;
+
+        // 画像ファイル名からキャラごとのCSSクラスを自動判定する仕組み
+        let autoClass = '';
+        if (imageSrc.includes('hinagiku')) {
+          autoClass = 'hinagiku-img';
+        } else if (imageSrc.includes('hiragi')) {
+          autoClass = 'hiragi-img';
+        } else if (imageSrc.includes('yuta')) {
+          autoClass = 'yuta-img';
+        }
+
+        img.className = 'character-img ' + autoClass;
+        img.classList.add('show');
+
+        slot.classList.remove('active', 'inactive');
+        if (isActive) {
+          slot.classList.add('active');
+        } else if (hasActiveSpeaker) {
+          slot.classList.add('inactive');
+        } else {
+          slot.classList.add('inactive');
+        }
+      } else {
+        img.classList.remove('show');
+        img.className = 'character-img';
+        slot.classList.remove('active', 'inactive');
+      }
+    }
+
+    function nextScenario() {
+      if (currentStep < scenarioData.length - 1) {
+        currentStep++;
+        renderStep();
+      } else {
+        ;
+        location.href = "end.html";
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderStep();
+    });
+  </script>
+  <script src="menu.js"></script>
+</body>
+</html>

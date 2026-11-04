@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>キャラ紹介 | 春夏秋冬〜追憶〜</title>
+  <style>
+    body {
+      background-color: #050507;
+      color: #e0e0e0;
+      font-family: 'Sawarabi Mincho', serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    button {
+      background-color: transparent;
+      color: #e0e0e0;
+      border: 1px solid #ffffff;
+      padding: 12px 30px;
+      font-size: 1rem;
+      font-family: inherit;
+      margin: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    button:hover {
+      background-color: #ffffff;
+      color: #111111;
+      box-shadow: 0 0 15px rgba(250, 252, 232, 0.6);
+    }
+
+    .game-screen {
+      width: min(90vw, 160vh);
+      aspect-ratio: 16 / 9;
+      max-height: 90vh;
+      background-color: #0f0f12;
+      background-image: url('background/great_houl.png'); /* 大広間背景背景 */
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* 左側アイコンサムネイルリスト（5枚ピッタリ収まるよう調整） */
+    .thumb-list {
+      position: absolute;
+      left: 15px;
+      top: 75px;
+      bottom: 15px;
+      width: 12%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between; /* 5枚を均等配置 */
+      gap: 6px;
+      z-index: 10;
+      box-sizing: border-box;
+    }
+
+    .thumb-item {
+      width: 100%;
+      height: 18%; /* 高さを18%に指定して5枚確実に納める */
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      opacity: 0.6;
+      transition: all 0.2s ease;
+      background-color: #000;
+      box-sizing: border-box;
+    }
+
+    .thumb-item:hover, .thumb-item.active {
+      opacity: 1;
+      border-color: #e5eb72;
+      transform: scale(1.03);
+      box-shadow: 0 0 10px rgba(229, 235, 114, 0.5);
+    }
+
+    /* 中央：立ち絵エリア */
+    .chara-container {
+      position: absolute;
+      left: 16%;
+      bottom: 0;
+      height: 92%;
+      width: 35%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      z-index: 5;
+    }
+
+    .chara-full {
+      max-height: 100%;
+      max-width: 100%;
+      object-fit: contain;
+      transition: opacity 0.3s ease;
+    }
+
+    /* 右側：名前＆説明文エリア */
+    .info-container {
+      position: absolute;
+      right: 40px;
+      top: 12%;
+      width: 45%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      z-index: 10;
+    }
+
+    /* 六角形風の名前タグ */
+    .name-badge {
+      background: linear-gradient(135deg, #fce4ec 0%, #fff9c4 100%);
+      color: #1a1a1a;
+      font-size: 2rem;
+      font-weight: bold;
+      padding: 8px 50px;
+      clip-path: polygon(15px 0%, calc(100% - 15px) 0%, 100% 50%, calc(100% - 15px) 100%, 15px 100%, 0% 50%);
+      border: 2px solid #000;
+      margin-left: -20px;
+      margin-bottom: -15px;
+      z-index: 2;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    /* 説明文ボックス */
+    .desc-box {
+      width: 100%;
+      background: linear-gradient(135deg, rgba(248, 187, 208, 0.65) 0%, rgba(255, 245, 157, 0.55) 100%);
+      border: 2px solid rgba(0, 0, 0, 0.8);
+      border-radius: 20px 0 30px 0;
+      padding: 35px 25px 25px 25px;
+      box-sizing: border-box;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+
+    .desc-text {
+      color: #000;
+      font-size: 1.25rem;
+      line-height: 1.7;
+      font-weight: 500;
+      white-space: pre-wrap;
+    }
+
+    .header-bar {
+      position: absolute;
+      top: 10px;
+      left: 0px;
+      right: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 50px;
+      z-index: 10;
+    }
+
+    /* 左上：固定バッジ */
+    .top-badge {
+      background: linear-gradient(135deg, #2b3b70, #182245);
+      color: #ffffff;
+      padding: 6px 20px;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+      border-left: 3px solid #5a78d0;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    }
+
+    /* 右下：前後のキャラ切替ボタン */
+    .nav-controls {
+      position: absolute;
+      right: 30px;
+      bottom: 25px;
+      display: flex;
+      gap: 15px;
+      z-index: 10;
+    }
+
+    .action-btn {
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      padding: 8px 24px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .action-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* 右上メニューボタン */
+    .menu-btn {
+      position: absolute !important;
+      top: 15px !important;
+      right: 15px !important;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .menu-btn:hover {
+      background: #c93b3b;
+      border-color: #c93b3b;
+    }
+
+    /* --- サイドメニュー用スタイル（menu.js用） --- */
+    .menu-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1001;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .menu-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .side-menu {
+      position: fixed;
+      top: 0;
+      right: -300px;
+      width: 250px;
+      height: 100vh;
+      background-color: rgba(15, 15, 18, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+      z-index: 1002;
+      transition: right 0.3s ease;
+      padding: 40px 20px;
+      box-sizing: border-box;
+      text-align: left;
+    }
+
+    .side-menu.active {
+      right: 0;
+    }
+
+    .side-menu h2 {
+      color: #ffffff;
+      font-size: 1.5rem;
+      border-bottom: 1px solid #c93b3b;
+      padding-bottom: 10px;
+      margin-top: 0;
+    }
+
+    .side-menu ul {
+      list-style: none;
+      padding: 0;
+      margin: 30px 0;
+    }
+
+    .side-menu li {
+      margin-bottom: 20px;
+    }
+
+    .side-menu a {
+      color: #e0e0e0;
+      text-decoration: none;
+      font-size: 1.1rem;
+      display: block;
+    }
+
+    .side-menu a:hover {
+      color: #e5eb72;
+    }
+
+    .side-menu .close-btn {
+      width: 100%;
+      margin-top: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      padding: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen" id="gameScreen">
+    
+    <div class="header-bar">
+      <div class="top-badge">3. キャラクター紹介</div>
+    </div>
+    
+    <!-- 左側サムネイル（5枚配置） -->
+    <div class="thumb-list" id="thumbList"></div>
+
+    <!-- 中央立ち絵 -->
+    <div class="chara-container">
+      <img src="" id="charaFullImg" class="chara-full" alt="キャラクター">
+    </div>
+
+    <!-- 右側情報 -->
+    <div class="info-container">
+      <div class="name-badge" id="charaName">ヒナギク</div>
+      <div class="desc-box">
+        <div class="desc-text" id="charaDesc"></div>
+      </div>
+    </div>
+
+    <!-- 右下ボタン -->
+    <div class="nav-controls">
+      <button class="action-btn" onclick="prevChara()">前のキャラ</button>
+      <button class="action-btn" onclick="nextChara()">次のキャラ</button>
+      <button class="action-btn" style="background:#c93b3b;" onclick="goNext()">次へ進む</button>
+    </div>
+  </div>
+
+  <script>
+    // キャラクターデータ定義
+    const charaData = [
+      {
+        id: "hinagiku",
+        name: "ヒナギク",
+        thumb: "chara/icon_hinagiku.png",
+        full: "chara/hinagiku_normal.png",
+        desc: "突如現れた新たな春の代行者。\n桃色の長い髪と顔立ちからは11歳とは思えない気品を感じる。\nどこか先代の面影を感じさせるような印象を受ける。"
+      },
+      {
+        id: "himawari",
+        name: "ヒマワリ",
+        thumb: "chara/icon_himawari.png",
+        full: "chara/himawari_normal.png",
+        desc: "今代の夏の代行者。\n明るく、活発な女の子。\n20代半ばになり、落ち着きもでてきた。\n先代の春の代行者・ツバキとは親友だった。"
+      },
+      {
+        id: "daria",
+        name: "ダリア",
+        thumb: "chara/icon_daria.png",
+        full: "chara/daria_normal.png",
+        desc: "今代の秋の代行者。\n外見から受ける印象通り堅物な性格。\n先代の春の代行者ともそれなりに親しかったようだ。\n現在29歳。"
+      },
+      {
+        id: "hiragi",
+        name: "ヒイラギ",
+        thumb: "chara/icon_hiragi.png",
+        full: "chara/hiragi_normal.png",
+        desc: "今代の冬の代行者。\n「季節の祖」である冬陣営の跡継ぎ。\n“冬”という季節の特性上、過激派のテロ組織から最も狙われることが多い。\n現在27歳。"
+      },
+      {
+        id: "sakura",
+        name: "ユウタ",
+        thumb: "chara/icon_yuta.png",
+        full: "chara/yuta_normal.png",
+        desc: "四季を順当に巡らせるための政府機関「四季庁」の最高責任者。\n過去に何やら大きな悲劇を経験しているようだ。\n本名は「結城 悠太」。\n現在58歳の定年を控え後進の育成に精を出している。"
+      }
+    ];
+
+    let currentIndex = 0;
+
+    function init() {
+      const thumbList = document.getElementById('thumbList');
+      thumbList.innerHTML = '';
+      
+      charaData.forEach((c, index) => {
+        const img = document.createElement('img');
+        img.src = c.thumb;
+        img.className = `thumb-item ${index === 0 ? 'active' : ''}`;
+        img.onclick = () => selectChara(index);
+        thumbList.appendChild(img);
+      });
+
+      updateDisplay();
+    }
+
+    function selectChara(index) {
+      currentIndex = index;
+      updateDisplay();
+    }
+
+    function prevChara() {
+      currentIndex = (currentIndex - 1 + charaData.length) % charaData.length;
+      updateDisplay();
+    }
+
+    function nextChara() {
+      currentIndex = (currentIndex + 1) % charaData.length;
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      const data = charaData[currentIndex];
+      document.getElementById('charaName').innerText = data.name;
+      document.getElementById('charaDesc').innerText = data.desc;
+      document.getElementById('charaFullImg').src = data.full;
+
+      const thumbs = document.querySelectorAll('.thumb-item');
+      thumbs.forEach((t, idx) => {
+        if (idx === currentIndex) {
+          t.classList.add('active');
+        } else {
+          t.classList.remove('active');
+        }
+      });
+    }
+
+    function goNext() {
+      location.href = "dice.html";
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+  <script src="menu.js"></script>
+</body>
+</html>
