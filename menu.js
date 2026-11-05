@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div id="phaseSubMenu" style="display: none; margin-top: 15px; border-top: 1px dashed #c93b3b; padding-top: 10px; max-height: calc(100vh - 180px); overflow-y: auto; padding-right: 5px;">
         <p style="font-size: 0.85rem; color: #e5eb72; margin: 0 0 10px 0; font-weight: bold;">▼ 移動するフェーズを選択</p>
         <ul style="margin: 0; padding-left: 15px;">
-          <li style="margin-bottom: 8px;"><a href="title.html" onclick="return confirmJump('タイトル画面');" style="font-size: 0.95rem;">タイトル画面</a></li>
+          <li style="margin-bottom: 8px;"><a href="index.html" onclick="return confirmJump('タイトル画面');" style="font-size: 0.95rem;">タイトル画面</a></li>
           <li style="margin-bottom: 8px;"><a href="explanation.html" onclick="return confirmJump('注意事項説明');" style="font-size: 0.95rem;">注意事項説明</a></li>
           <li style="margin-bottom: 8px;"><a href="prologue.html" onclick="return confirmJump('プロローグ');" style="font-size: 0.95rem;">1. プロローグ</a></li>
           <li style="margin-bottom: 8px;"><a href="opening.html" onclick="return confirmJump('オープニング');" style="font-size: 0.95rem;">2. オープニング</a></li>
@@ -130,7 +130,7 @@ function menuAction(action) {
   } 
   else if (action === 'title') {
     if (confirm("タイトル画面に戻りますか？")) {
-      location.href = "title.html";
+      location.href = "index.html";
     }
   }
 }
